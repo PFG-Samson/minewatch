@@ -1,6 +1,7 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { getAnalysisRun, type GeoJsonFeatureCollection } from '@/lib/api';
 
 // Sample mine boundary polygon (approximate coordinates for demo)
 const MINE_BOUNDARY: [number, number][] = [
@@ -12,48 +13,58 @@ const MINE_BOUNDARY: [number, number][] = [
   [-23.57, 119.74],
 ];
 
-// Sample change detection zones
-const CHANGE_ZONES = [
-  {
-    id: 1,
-    type: 'vegetation_loss',
-    coords: [[-23.545, 119.77], [-23.54, 119.78], [-23.55, 119.79], [-23.555, 119.775]] as [number, number][],
-    area: 12.5,
-  },
-  {
-    id: 2,
-    type: 'vegetation_gain',
-    coords: [[-23.57, 119.80], [-23.565, 119.815], [-23.575, 119.82], [-23.58, 119.805]] as [number, number][],
-    area: 8.3,
-  },
-  {
-    id: 3,
-    type: 'alert',
-    coords: [[-23.59, 119.76], [-23.585, 119.77], [-23.595, 119.775], [-23.60, 119.765]] as [number, number][],
-    area: 3.2,
-  },
-];
-
 interface MapViewProps {
   showBaseline?: boolean;
   showLatest?: boolean;
   showChanges?: boolean;
   showAlerts?: boolean;
+  showBoundary?: boolean;
+  runId?: number | null;
+  mineAreaBoundary?: Record<string, unknown> | null;
+  bufferKm?: number | null;
 }
 
 export function MapView({ 
   showBaseline = true, 
   showLatest = true, 
   showChanges = true, 
-  showAlerts = true 
+  showAlerts = true,
+  showBoundary = true,
+  runId = null,
+  mineAreaBoundary = null,
+  bufferKm = null,
 }: MapViewProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
+  const [zones, setZones] = useState<GeoJsonFeatureCollection | null>(null);
+  const lastBoundaryKeyRef = useRef<string | null>(null);
   const layersRef = useRef<{
-    boundary?: L.Polygon;
-    buffer?: L.Polygon;
-    changes: L.Polygon[];
-  }>({ changes: [] });
+    boundary?: L.Layer;
+    buffer?: L.Layer;
+    extent?: L.Rectangle;
+    zonesLayer?: L.GeoJSON;
+  }>({});
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const load = async () => {
+      if (!runId) {
+        setZones(null);
+        return;
+      }
+
+      const data = await getAnalysisRun(runId);
+      if (cancelled) return;
+      setZones(data.zones);
+    };
+
+    void load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [runId]);
 
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
@@ -72,7 +83,7 @@ export function MapView({
       maxZoom: 18,
     }).addTo(map);
 
-    // Add mine boundary
+    // Default boundary + buffer (can be replaced by saved mine area GeoJSON)
     const boundary = L.polygon(MINE_BOUNDARY, {
       color: '#0d9488',
       weight: 3,
@@ -82,18 +93,9 @@ export function MapView({
     }).addTo(map);
     layersRef.current.boundary = boundary;
 
-    // Add buffer zone (5km approximation)
-    const bufferCoords = MINE_BOUNDARY.map(([lat, lng]) => [
-      lat + (Math.random() - 0.5) * 0.03 - 0.02,
-      lng + (Math.random() - 0.5) * 0.04 - 0.02,
-    ] as [number, number]);
-    
-    const buffer = L.polygon([
-      [-23.50, 119.70],
-      [-23.48, 119.88],
-      [-23.62, 119.90],
-      [-23.65, 119.72],
-    ], {
+    const center = boundary.getBounds().getCenter();
+    const buffer = L.circle(center, {
+      radius: 2000,
       color: '#64748b',
       weight: 2,
       fillColor: '#64748b',
@@ -110,48 +112,139 @@ export function MapView({
     };
   }, []);
 
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    if (layersRef.current.boundary) {
+      map.removeLayer(layersRef.current.boundary);
+      layersRef.current.boundary = undefined;
+    }
+    if (layersRef.current.buffer) {
+      map.removeLayer(layersRef.current.buffer);
+      layersRef.current.buffer = undefined;
+    }
+    if (layersRef.current.extent) {
+      map.removeLayer(layersRef.current.extent);
+      layersRef.current.extent = undefined;
+    }
+
+    if (!showBoundary) return;
+
+    const boundaryLayer = mineAreaBoundary
+      ? L.geoJSON(mineAreaBoundary as any, {
+          style: {
+            color: '#0d9488',
+            weight: 3,
+            fillColor: '#0d9488',
+            fillOpacity: 0.1,
+            dashArray: '10, 5',
+          },
+        })
+      : L.polygon(MINE_BOUNDARY, {
+          color: '#0d9488',
+          weight: 3,
+          fillColor: '#0d9488',
+          fillOpacity: 0.1,
+          dashArray: '10, 5',
+        });
+
+    boundaryLayer.addTo(map);
+    layersRef.current.boundary = boundaryLayer;
+
+    const bounds = (boundaryLayer as any).getBounds?.();
+    if (bounds) {
+      const rect = L.rectangle(bounds, {
+        color: '#22c55e',
+        weight: 1,
+        fillOpacity: 0,
+        dashArray: '4, 6',
+      });
+      rect.addTo(map);
+      layersRef.current.extent = rect;
+
+      const boundaryKey = mineAreaBoundary ? JSON.stringify(mineAreaBoundary) : null;
+      if (boundaryKey && boundaryKey !== lastBoundaryKeyRef.current) {
+        lastBoundaryKeyRef.current = boundaryKey;
+        map.fitBounds(bounds.pad(0.2));
+      }
+    }
+
+    const km = typeof bufferKm === 'number' && Number.isFinite(bufferKm) ? bufferKm : 2;
+    const center = bounds?.getCenter ? bounds.getCenter() : L.latLng(-23.56, 119.79);
+
+    const bufferLayer = L.circle(center, {
+      radius: km * 1000,
+      color: '#64748b',
+      weight: 2,
+      fillColor: '#64748b',
+      fillOpacity: 0.05,
+      dashArray: '5, 10',
+    }).addTo(map);
+    layersRef.current.buffer = bufferLayer;
+  }, [mineAreaBoundary, bufferKm, showBoundary]);
+
   // Handle layer visibility
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
 
-    // Clear existing change zones
-    layersRef.current.changes.forEach(layer => map.removeLayer(layer));
-    layersRef.current.changes = [];
+    if (layersRef.current.zonesLayer) {
+      map.removeLayer(layersRef.current.zonesLayer);
+      layersRef.current.zonesLayer = undefined;
+    }
 
-    if (showChanges || showAlerts) {
-      CHANGE_ZONES.forEach(zone => {
-        if (zone.type === 'alert' && !showAlerts) return;
-        if (zone.type !== 'alert' && !showChanges) return;
+    if (!zones) return;
 
-        const color = zone.type === 'vegetation_loss' 
-          ? '#c2410c' 
-          : zone.type === 'vegetation_gain' 
-            ? '#16a34a' 
+    const filtered: GeoJsonFeatureCollection = {
+      type: 'FeatureCollection',
+      features: zones.features.filter((f) => {
+        const zoneType = String(f.properties?.zone_type ?? '');
+        if (zoneType === 'alert') return showAlerts;
+        return showChanges;
+      }),
+    };
+
+    const zonesLayer = L.geoJSON(filtered as any, {
+      style: (feature: any) => {
+        const zoneType = String(feature?.properties?.zone_type ?? '');
+        const color = zoneType === 'vegetation_loss'
+          ? '#c2410c'
+          : zoneType === 'vegetation_gain'
+            ? '#16a34a'
             : '#dc2626';
 
-        const polygon = L.polygon(zone.coords, {
-          color: color,
+        return {
+          color,
           weight: 2,
           fillColor: color,
           fillOpacity: 0.4,
-        }).addTo(map);
+        } as L.PathOptions;
+      },
+      onEachFeature: (feature: any, layer) => {
+        const zoneType = String(feature?.properties?.zone_type ?? '');
+        const areaHa = feature?.properties?.area_ha;
+        const color = zoneType === 'vegetation_loss'
+          ? '#c2410c'
+          : zoneType === 'vegetation_gain'
+            ? '#16a34a'
+            : '#dc2626';
 
-        polygon.bindPopup(`
+        layer.bindPopup(`
           <div style="font-family: Inter, sans-serif; padding: 4px;">
             <strong style="font-size: 14px; color: ${color};">
-              ${zone.type === 'vegetation_loss' ? '🔻 Vegetation Loss' : zone.type === 'vegetation_gain' ? '🌱 Vegetation Gain' : '⚠️ Alert Zone'}
+              ${zoneType === 'vegetation_loss' ? '🔻 Vegetation Loss' : zoneType === 'vegetation_gain' ? '🌱 Vegetation Gain' : '⚠️ Alert Zone'}
             </strong>
             <p style="margin: 8px 0 0; font-size: 13px; color: #475569;">
-              Area: <strong>${zone.area} hectares</strong>
+              Area: <strong>${areaHa ?? 'n/a'} hectares</strong>
             </p>
           </div>
         `);
+      },
+    }).addTo(map);
 
-        layersRef.current.changes.push(polygon);
-      });
-    }
-  }, [showChanges, showAlerts]);
+    layersRef.current.zonesLayer = zonesLayer;
+  }, [showChanges, showAlerts, zones]);
 
   return (
     <div 

@@ -1,50 +1,93 @@
-# Welcome to Minewatch
+# MineWatch
 
+MineWatch is a web application that helps teams monitor land-use and environmental changes around mining sites using satellite imagery and GIS.
 
-## How can I edit this code?
+Current capabilities:
 
-**Use your preferred IDE**
+- **Mine boundary setup** (upload/paste GeoJSON)
+- **Satellite metadata ingestion via STAC** (Sentinel‑2 L2A using Microsoft Planetary Computer)
+- **Analysis runs** (currently generates demo change zones/alerts; pipeline is structured to become NDVI-based next)
+- **Interactive map** (renders boundary, buffer, zones; auto-zooms to your saved boundary)
+- **Alerts + PDF report generation**
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## Repository structure
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- `backend/` FastAPI + SQLite API
+- `src/` React + Vite frontend
 
-Follow these steps:
+## Prerequisites
+
+- Node.js 18+
+- Python 3.10+ recommended (Windows: use a project-local venv/conda env that is writable)
+
+## Run the backend (FastAPI)
+
+1) Create/activate an environment
+
+2) Install backend deps:
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+python -m pip install -r backend/requirements.txt
+```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+3) Start the API:
 
-# Step 3: Install the necessary dependencies.
-npm i
+```sh
+python -m uvicorn backend.main:app --reload --port 8000
+```
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+Health check:
+
+- `GET http://127.0.0.1:8000/health`
+
+## Run the frontend (React)
+
+```sh
+npm install
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Frontend:
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+- `http://localhost:8080/dashboard`
 
-**Use GitHub Codespaces**
+## How to use (happy path)
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+1) Open the Dashboard.
+2) In **Mine Area Setup**, paste or upload your boundary GeoJSON and click **Save**.
+3) In **Satellite Source**, click **Ingest via STAC**.
+4) Click **Refresh** to create an analysis run.
+5) Click **Generate Report** to download a PDF for the current run.
 
-## What technologies are used for this project?
+## Key API endpoints
 
-This project is built with:
+- `GET /health`
+- `GET /mine-area`, `PUT /mine-area`
+- `POST /jobs/ingest-stac` (STAC search + store scenes as `imagery_scene` rows)
+- `GET /imagery`, `GET /imagery/latest`, `POST /imagery`
+- `POST /analysis-runs`, `GET /analysis-runs/{run_id}`, `GET /analysis-runs/{run_id}/report`
+- `GET /alerts`
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## STAC ingestion notes
+
+The STAC ingestion job queries the Planetary Computer STAC API:
+
+- `https://planetarycomputer.microsoft.com/api/stac/v1/search`
+
+It uses your saved mine boundary to derive a bounding box and searches Sentinel‑2 L2A items, storing:
+
+- acquisition datetime
+- cloud cover (when available)
+- scene footprint geometry
+- scene identifier
+
+## Troubleshooting (Windows)
+
+- If `pip.exe` access is denied, use `python -m pip ...` in a **user-writable** environment.
+- If your Anaconda `base` env is read-only, create a local env inside the repo (example):
+
+```sh
+conda create -p .\.minewatch-env python=3.11 -y
+conda activate .\.minewatch-env
+python -m pip install -r backend/requirements.txt
+```

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Trees, 
@@ -9,42 +9,19 @@ import {
   RefreshCw,
   ChevronDown
 } from 'lucide-react';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { DashboardSidebar } from './DashboardSidebar';
 import { MapView } from './MapView';
 import { StatCard } from './StatCard';
 import { AlertItem } from './AlertItem';
 import { LayerControl } from './LayerControl';
 import { Button } from '@/components/ui/button';
-
-const mockAlerts = [
-  {
-    id: '1',
-    type: 'vegetation_loss' as const,
-    title: 'Significant vegetation loss detected',
-    description: 'NDVI analysis shows 12.5 hectares of vegetation decline in the northwest sector.',
-    location: 'Sector NW-3',
-    timestamp: '2 hours ago',
-    severity: 'high' as const,
-  },
-  {
-    id: '2',
-    type: 'boundary_breach' as const,
-    title: 'Activity detected outside boundary',
-    description: 'Movement patterns suggest potential unauthorized expansion near buffer zone.',
-    location: 'Buffer Zone East',
-    timestamp: '5 hours ago',
-    severity: 'medium' as const,
-  },
-  {
-    id: '3',
-    type: 'threshold_exceeded' as const,
-    title: 'Bare soil threshold exceeded',
-    description: 'Current exposed soil area exceeds permitted levels by 8%.',
-    location: 'Pit Area B',
-    timestamp: '1 day ago',
-    severity: 'low' as const,
-  },
-];
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { toast } from '@/hooks/use-toast';
+import { createAnalysisRun, downloadAnalysisReport, getLatestImagery, getMineArea, listAlerts, runStacIngestJob, upsertMineArea } from '@/lib/api';
 
 const initialLayers = [
   { id: 'baseline', name: 'Baseline (Jan 2024)', description: 'Reference imagery', color: '#0d9488', enabled: true },
@@ -57,6 +34,96 @@ const initialLayers = [
 export function Dashboard() {
   const [activeNav, setActiveNav] = useState('dashboard');
   const [layers, setLayers] = useState(initialLayers);
+  const [currentRunId, setCurrentRunId] = useState<number | null>(null);
+  const didInitRunRef = useRef(false);
+  const [bufferKm, setBufferKm] = useState<string>('2');
+  const [boundaryText, setBoundaryText] = useState<string>('');
+
+  const alertsQuery = useQuery({
+    queryKey: ['alerts'],
+    queryFn: () => listAlerts(50),
+  });
+
+  const downloadReportMutation = useMutation({
+    mutationFn: async () => {
+      if (!currentRunId) {
+        throw new Error('No analysis run available');
+      }
+      const blob = await downloadAnalysisReport(currentRunId);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `minewatch-report-run-${currentRunId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    },
+    onSuccess: () => {
+      toast({ title: 'Report downloaded', description: 'PDF report generated successfully.' });
+    },
+    onError: (err) => {
+      toast({ title: 'Report failed', description: err instanceof Error ? err.message : 'Unable to generate report.' });
+    },
+  });
+
+  const mineAreaQuery = useQuery({
+    queryKey: ['mine-area'],
+    queryFn: () => getMineArea(),
+    retry: false,
+  });
+
+  const latestImageryQuery = useQuery({
+    queryKey: ['imagery', 'latest'],
+    queryFn: () => getLatestImagery(),
+    retry: false,
+  });
+
+  const ingestMutation = useMutation({
+    mutationFn: () => runStacIngestJob({ max_items: 10, cloud_cover_lte: 20 }),
+    onSuccess: () => {
+      toast({ title: 'Ingestion complete', description: 'STAC scenes ingested successfully.' });
+      void latestImageryQuery.refetch();
+    },
+    onError: (err) => {
+      toast({ title: 'Ingestion failed', description: err instanceof Error ? err.message : 'Unable to ingest imagery.' });
+    },
+  });
+
+  useEffect(() => {
+    if (!mineAreaQuery.data) return;
+    setBufferKm(String(mineAreaQuery.data.buffer_km));
+    setBoundaryText(JSON.stringify(mineAreaQuery.data.boundary, null, 2));
+  }, [mineAreaQuery.data]);
+
+  const createRunMutation = useMutation({
+    mutationFn: () => createAnalysisRun({}),
+    onSuccess: (run) => {
+      setCurrentRunId(run.id);
+      void alertsQuery.refetch();
+    },
+  });
+
+  const saveMineAreaMutation = useMutation({
+    mutationFn: async () => {
+      const parsed = JSON.parse(boundaryText || '{}');
+      const km = Number(bufferKm);
+      if (!Number.isFinite(km) || km < 0) {
+        throw new Error('Invalid buffer distance');
+      }
+      return upsertMineArea({ name: 'Mine Area', boundary: parsed, buffer_km: km });
+    },
+    onSuccess: () => {
+      toast({ title: 'Saved', description: 'Mine area configuration saved.' });
+      void mineAreaQuery.refetch();
+    },
+  });
+
+  useEffect(() => {
+    if (didInitRunRef.current) return;
+    didInitRunRef.current = true;
+    createRunMutation.mutate();
+  }, [createRunMutation]);
 
   const handleLayerToggle = (layerId: string) => {
     setLayers(prev => 
@@ -70,6 +137,9 @@ export function Dashboard() {
 
   const showChanges = layers.find(l => l.id === 'changes')?.enabled ?? true;
   const showAlerts = layers.find(l => l.id === 'alerts')?.enabled ?? true;
+  const showBoundary = layers.find(l => l.id === 'boundary')?.enabled ?? true;
+
+  const alerts = alertsQuery.data ?? [];
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
@@ -88,11 +158,22 @@ export function Dashboard() {
               Last 30 Days
               <ChevronDown className="w-4 h-4" />
             </Button>
-            <Button variant="outline" size="sm" className="gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              onClick={() => createRunMutation.mutate()}
+              disabled={createRunMutation.isPending}
+            >
               <RefreshCw className="w-4 h-4" />
               Refresh
             </Button>
-            <Button size="sm" className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90">
+            <Button
+              size="sm"
+              className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90"
+              onClick={() => downloadReportMutation.mutate()}
+              disabled={downloadReportMutation.isPending || !currentRunId}
+            >
               <Download className="w-4 h-4" />
               Generate Report
             </Button>
@@ -133,7 +214,7 @@ export function Dashboard() {
               />
               <StatCard
                 title="Active Alerts"
-                value="3"
+                value={String(alerts.length)}
                 icon={<AlertTriangle className="w-5 h-5" />}
                 variant="alert"
                 delay={0.3}
@@ -150,6 +231,10 @@ export function Dashboard() {
               <MapView 
                 showChanges={showChanges}
                 showAlerts={showAlerts}
+                showBoundary={showBoundary}
+                runId={currentRunId}
+                mineAreaBoundary={mineAreaQuery.data?.boundary ?? null}
+                bufferKm={mineAreaQuery.data?.buffer_km ?? null}
               />
             </motion.div>
 
@@ -166,8 +251,18 @@ export function Dashboard() {
                 </Button>
               </div>
               <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                {mockAlerts.map((alert, index) => (
-                  <AlertItem key={alert.id} {...alert} delay={0.5 + index * 0.1} />
+                {alerts.map((alert, index) => (
+                  <AlertItem
+                    key={alert.id}
+                    id={String(alert.id)}
+                    type={alert.type as any}
+                    title={alert.title}
+                    description={alert.description}
+                    location={alert.location}
+                    timestamp={alert.created_at}
+                    severity={alert.severity as any}
+                    delay={0.5 + index * 0.1}
+                  />
                 ))}
               </div>
             </motion.div>
@@ -175,6 +270,63 @@ export function Dashboard() {
 
           {/* Right sidebar */}
           <aside className="w-80 border-l border-border bg-card/30 p-4 overflow-y-auto hidden lg:block">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Mine Area Setup</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="buffer-km">Buffer (km)</Label>
+                  <Input
+                    id="buffer-km"
+                    type="number"
+                    value={bufferKm}
+                    onChange={(e) => setBufferKm(e.target.value)}
+                    min={0}
+                    step={0.1}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="boundary-file">Boundary GeoJSON file</Label>
+                  <Input
+                    id="boundary-file"
+                    type="file"
+                    accept=".geojson,application/geo+json,application/json"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = () => {
+                        const text = typeof reader.result === 'string' ? reader.result : '';
+                        setBoundaryText(text);
+                      };
+                      reader.readAsText(file);
+                    }}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="boundary-text">Boundary GeoJSON (paste)</Label>
+                  <Textarea
+                    id="boundary-text"
+                    value={boundaryText}
+                    onChange={(e) => setBoundaryText(e.target.value)}
+                    placeholder="Paste a GeoJSON Polygon or FeatureCollection here"
+                    className="min-h-[140px] font-mono text-xs"
+                  />
+                </div>
+
+                <Button
+                  className="w-full"
+                  onClick={() => saveMineAreaMutation.mutate()}
+                  disabled={saveMineAreaMutation.isPending}
+                >
+                  Save Mine Area
+                </Button>
+              </CardContent>
+            </Card>
+
             <LayerControl layers={layers} onToggle={handleLayerToggle} />
             
             {/* Quick stats */}
@@ -232,10 +384,25 @@ export function Dashboard() {
                   <span className="text-lg">🛰️</span>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-foreground">Sentinel-2A</p>
-                  <p className="text-xs text-muted-foreground">10m resolution • Multispectral</p>
+                  <p className="text-sm font-medium text-foreground">
+                    {latestImageryQuery.data?.source ?? 'No imagery registered'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {latestImageryQuery.data
+                      ? `Acquired: ${latestImageryQuery.data.acquired_at} • Cloud: ${latestImageryQuery.data.cloud_cover ?? 'n/a'}%`
+                      : 'Register or ingest imagery to enable real comparisons'}
+                  </p>
                 </div>
               </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-3 w-full"
+                onClick={() => ingestMutation.mutate()}
+                disabled={ingestMutation.isPending}
+              >
+                Ingest via STAC
+              </Button>
             </motion.div>
           </aside>
         </div>
