@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Trees, 
-  Layers3, 
-  AlertTriangle, 
+import {
+  Trees,
+  Layers3,
+  AlertTriangle,
   CalendarDays,
   Download,
   RefreshCw,
@@ -126,9 +126,9 @@ export function Dashboard() {
   }, [createRunMutation]);
 
   const handleLayerToggle = (layerId: string) => {
-    setLayers(prev => 
-      prev.map(layer => 
-        layer.id === layerId 
+    setLayers(prev =>
+      prev.map(layer =>
+        layer.id === layerId
           ? { ...layer, enabled: !layer.enabled }
           : layer
       )
@@ -144,13 +144,13 @@ export function Dashboard() {
   return (
     <div className="flex h-screen bg-background overflow-hidden">
       <DashboardSidebar activeItem={activeNav} onItemClick={setActiveNav} />
-      
+
       <main className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
         <header className="flex items-center justify-between px-6 py-4 border-b border-border bg-card/50 backdrop-blur-sm">
           <div>
-            <h1 className="text-xl font-semibold text-foreground">Dashboard Overview</h1>
-            <p className="text-sm text-muted-foreground">Pilbara Iron Ore Project • Western Australia</p>
+            <h1 className="text-xl font-semibold text-foreground">Mpape Crushed Rock Project</h1>
+            <p className="text-sm text-muted-foreground">Abuja • FCT, Nigeria</p>
           </div>
           <div className="flex items-center gap-3">
             <Button variant="outline" size="sm" className="gap-2">
@@ -228,7 +228,7 @@ export function Dashboard() {
               transition={{ duration: 0.4, delay: 0.2 }}
               className="map-container h-[500px] mb-6"
             >
-              <MapView 
+              <MapView
                 showChanges={showChanges}
                 showAlerts={showAlerts}
                 showBoundary={showBoundary}
@@ -328,7 +328,7 @@ export function Dashboard() {
             </Card>
 
             <LayerControl layers={layers} onToggle={handleLayerToggle} />
-            
+
             {/* Quick stats */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}

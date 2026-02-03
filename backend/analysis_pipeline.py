@@ -40,48 +40,48 @@ def run_analysis(
     zones = [
         Zone(
             zone_type="vegetation_loss",
-            area_ha=12.5,
+            area_ha=1.5,
             geometry={
                 "type": "Polygon",
                 "coordinates": [
                     [
-                        [119.77, -23.545],
-                        [119.78, -23.54],
-                        [119.79, -23.55],
-                        [119.775, -23.555],
-                        [119.77, -23.545],
+                        [7.491, 9.137],
+                        [7.493, 9.138],
+                        [7.494, 9.136],
+                        [7.492, 9.135],
+                        [7.491, 9.137],
                     ]
                 ],
             },
         ),
         Zone(
             zone_type="vegetation_gain",
-            area_ha=8.3,
+            area_ha=0.8,
             geometry={
                 "type": "Polygon",
                 "coordinates": [
                     [
-                        [119.80, -23.57],
-                        [119.815, -23.565],
-                        [119.82, -23.575],
-                        [119.805, -23.58],
-                        [119.80, -23.57],
+                        [7.496, 9.134],
+                        [7.498, 9.135],
+                        [7.497, 9.133],
+                        [7.495, 9.132],
+                        [7.496, 9.134],
                     ]
                 ],
             },
         ),
         Zone(
             zone_type="alert",
-            area_ha=3.2,
+            area_ha=0.5,
             geometry={
                 "type": "Polygon",
                 "coordinates": [
                     [
-                        [119.76, -23.59],
-                        [119.77, -23.585],
-                        [119.775, -23.595],
-                        [119.765, -23.60],
-                        [119.76, -23.59],
+                        [7.489, 9.132],
+                        [7.491, 9.133],
+                        [7.490, 9.131],
+                        [7.488, 9.130],
+                        [7.489, 9.132],
                     ]
                 ],
             },
@@ -91,23 +91,23 @@ def run_analysis(
     alerts = [
         Alert(
             alert_type="vegetation_loss",
-            title="Significant vegetation loss detected",
-            description="NDVI analysis shows 12.5 hectares of vegetation decline in the northwest sector.",
-            location="Sector NW-3",
+            title="Vegetation loss near quarry lake",
+            description="NDVI analysis shows decline in vegetation cover on the western ridge of Mpape quarry.",
+            location="Mpape West Ridge",
             severity="high",
         ),
         Alert(
             alert_type="boundary_breach",
-            title="Activity detected outside boundary",
-            description="Movement patterns suggest potential unauthorized expansion near buffer zone.",
-            location="Buffer Zone East",
+            title="Unauthorized access detected",
+            description="Movement patterns suggest potential trespassing in the restricted lake sector.",
+            location="Quarry Lake Restricted Area",
             severity="medium",
         ),
         Alert(
             alert_type="threshold_exceeded",
-            title="Bare soil threshold exceeded",
-            description="Current exposed soil area exceeds permitted levels by 8%.",
-            location="Pit Area B",
+            title="Dust level advisory",
+            description="Surface reflectance indicators suggest elevated dust levels in active stone crushing zones.",
+            location="Crushing Sector A",
             severity="low",
         ),
     ]

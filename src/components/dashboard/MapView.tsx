@@ -3,14 +3,14 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { getAnalysisRun, type GeoJsonFeatureCollection } from '@/lib/api';
 
-// Sample mine boundary polygon (approximate coordinates for demo)
+// Mpape Crushed Rock Quarry area coordinates
 const MINE_BOUNDARY: [number, number][] = [
-  [-23.55, 119.75],
-  [-23.52, 119.80],
-  [-23.54, 119.85],
-  [-23.58, 119.83],
-  [-23.60, 119.78],
-  [-23.57, 119.74],
+  [9.138, 7.490],
+  [9.140, 7.495],
+  [9.135, 7.500],
+  [9.130, 7.498],
+  [9.128, 7.492],
+  [9.132, 7.488],
 ];
 
 interface MapViewProps {
@@ -24,10 +24,10 @@ interface MapViewProps {
   bufferKm?: number | null;
 }
 
-export function MapView({ 
-  showBaseline = true, 
-  showLatest = true, 
-  showChanges = true, 
+export function MapView({
+  showBaseline = true,
+  showLatest = true,
+  showChanges = true,
   showAlerts = true,
   showBoundary = true,
   runId = null,
@@ -71,8 +71,8 @@ export function MapView({
 
     // Initialize map centered on mine area
     const map = L.map(mapRef.current, {
-      center: [-23.56, 119.79],
-      zoom: 13,
+      center: [9.135, 7.493],
+      zoom: 15,
       zoomControl: true,
       attributionControl: true,
     });
@@ -133,21 +133,21 @@ export function MapView({
 
     const boundaryLayer = mineAreaBoundary
       ? L.geoJSON(mineAreaBoundary as any, {
-          style: {
-            color: '#0d9488',
-            weight: 3,
-            fillColor: '#0d9488',
-            fillOpacity: 0.1,
-            dashArray: '10, 5',
-          },
-        })
-      : L.polygon(MINE_BOUNDARY, {
+        style: {
           color: '#0d9488',
           weight: 3,
           fillColor: '#0d9488',
           fillOpacity: 0.1,
           dashArray: '10, 5',
-        });
+        },
+      })
+      : L.polygon(MINE_BOUNDARY, {
+        color: '#0d9488',
+        weight: 3,
+        fillColor: '#0d9488',
+        fillOpacity: 0.1,
+        dashArray: '10, 5',
+      });
 
     boundaryLayer.addTo(map);
     layersRef.current.boundary = boundaryLayer;
@@ -171,7 +171,7 @@ export function MapView({
     }
 
     const km = typeof bufferKm === 'number' && Number.isFinite(bufferKm) ? bufferKm : 2;
-    const center = bounds?.getCenter ? bounds.getCenter() : L.latLng(-23.56, 119.79);
+    const center = bounds?.getCenter ? bounds.getCenter() : L.latLng(9.135, 7.493);
 
     const bufferLayer = L.circle(center, {
       radius: km * 1000,
@@ -247,8 +247,8 @@ export function MapView({
   }, [showChanges, showAlerts, zones]);
 
   return (
-    <div 
-      ref={mapRef} 
+    <div
+      ref={mapRef}
       className="w-full h-full min-h-[400px] rounded-xl"
       style={{ background: 'hsl(var(--muted))' }}
     />
