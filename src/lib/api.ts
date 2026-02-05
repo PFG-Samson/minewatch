@@ -138,3 +138,7 @@ export async function runStacIngestJob(payload: StacIngestJobDto = {}): Promise<
     }),
   });
 }
+
+export async function listImageryScenes(limit = 50): Promise<ImagerySceneDto[]> {
+  return request<ImagerySceneDto[]>(`/imagery?limit=${encodeURIComponent(String(limit))}`);
+}

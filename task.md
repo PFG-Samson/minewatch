@@ -86,7 +86,22 @@ Suggested incremental plan:
 Notes:
 - This will likely require adding optional deps:
   - `numpy`, `rasterio`, `shapely`, `pyproj`, `pystac-client` (or keep stdlib HTTP + rasterio)
-- The current app structure already supports replacing the pipeline without changing the UI/API.
+- [x] Analyze current `Dashboard.tsx` structure [Step Id: 69]
+- [x] Define content for each navigation tab [Step Id: 70]
+- [x] Create implementation plan [Step Id: 71]
+
+## Execution
+- [x] Refactor `Dashboard.tsx` to use conditional rendering for main content
+- [x] Implement `ImageryView` component
+- [x] Implement `AnalysisView` component
+- [x] Implement `AlertsView` component
+- [x] Implement `ReportsView` component
+- [x] Ensure `MapView` can be used in both Overview and Full Map modes
+
+## Verification
+- [x] Verify each sidebar tab displays unique and relevant content
+- [x] Verify "View All" buttons on the overview page correctly switch tabs
+- [x] Verify integration with backend for each view
 
 ### P0 — Choose how to handle imagery storage
 Decide whether to:
