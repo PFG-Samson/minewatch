@@ -2,3 +2,10 @@ fastapi==0.115.6
 uvicorn[standard]==0.30.6
 pydantic==2.10.3
 reportlab==4.2.5
+rasterio==1.4.1
+numpy==1.26.4
+shapely==2.0.6
+pystac-client==0.8.2
+fiona==1.9.6
+requests==2.32.3
+pyproj==3.6.1

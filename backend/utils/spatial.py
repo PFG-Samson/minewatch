@@ -1,0 +1,65 @@
+import numpy as np
+import rasterio
+from rasterio.mask import mask
+from rasterio.features import shapes
+from shapely.geometry import shape, mapping
+from typing import Any, Tuple, List
+
+def calculate_ndvi(red_band: np.ndarray, nir_band: np.ndarray) -> np.ndarray:
+    """Calculates Normalized Difference Vegetation Index (NDVI)."""
+    # Use numeric types to avoid overflow and divide-by-zero warnings
+    red = red_band.astype(float)
+    nir = nir_band.astype(float)
+    
+    with np.errstate(divide='ignore', invalid='ignore'):
+        ndvi = (nir - red) / (nir + red)
+    
+    # Clean up NaNs and Infinities
+    ndvi = np.nan_to_num(ndvi, nan=0.0, posinf=0.0, neginf=0.0)
+    return ndvi
+
+def calculate_ndwi(green_band: np.ndarray, nir_band: np.ndarray) -> np.ndarray:
+    """Calculates Normalized Difference Water Index (NDWI) for water detection."""
+    green = green_band.astype(float)
+    nir = nir_band.astype(float)
+    
+    with np.errstate(divide='ignore', invalid='ignore'):
+        ndwi = (green - nir) / (green + nir)
+    
+    ndwi = np.nan_to_num(ndwi, nan=0.0, posinf=0.0, neginf=0.0)
+    return ndwi
+
+def calculate_bsi(red: np.ndarray, blue: np.ndarray, nir: np.ndarray, swir: np.ndarray) -> np.ndarray:
+    """Calculates Bare Soil Index (BSI)."""
+    # Formula: ((SWIR + Red) - (NIR + Blue)) / ((SWIR + Red) + (NIR + Blue))
+    r = red.astype(float)
+    b = blue.astype(float)
+    n = nir.astype(float)
+    s = swir.astype(float)
+    
+    numerator = (s + r) - (n + b)
+    denominator = (s + r) + (n + b)
+    
+    with np.errstate(divide='ignore', invalid='ignore'):
+        bsi = numerator / denominator
+        
+    bsi = np.nan_to_num(bsi, nan=0.0, posinf=0.0, neginf=0.0)
+    return bsi
+
+def clip_raster_to_geometry(raster_path: str, geojson_geometry: dict) -> Tuple[np.ndarray, Any]:
+    """Clips a raster file to the provided GeoJSON geometry."""
+    with rasterio.open(raster_path) as src:
+        geoms = [shape(geojson_geometry)]
+        out_image, out_transform = mask(src, geoms, crop=True)
+        return out_image[0], out_transform
+
+def vectorize_mask(mask_array: np.ndarray, transform: Any) -> List[dict]:
+    """Converts a binary mask (numpy array) into a list of GeoJSON features."""
+    results = [
+        {
+            "properties": {"raster_value": v},
+            "geometry": mapping(shape(s))
+        }
+        for s, v in shapes(mask_array.astype(np.int16), mask=mask_array > 0, transform=transform)
+    ]
+    return results
