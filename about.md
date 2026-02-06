@@ -40,34 +40,19 @@ That creates risk:
 MineWatch follows a simple, repeatable workflow:
 
 ### 1) Define the “area of truth”
-A user provides the mining lease boundary (a polygon) and a buffer zone around it.
-
-This defines where monitoring matters.
+A user provides the mining lease boundary, a project name, and a description in the **Settings** tab. This defines where monitoring matters.
 
 ### 2) Bring in satellite observations
-MineWatch automatically finds recent satellite imagery over that area.
+MineWatch automatically finds recent multi-spectral imagery over that area using the STAC protocol. It downloads specific bands (Red, Green, Blue, NIR, SWIR) needed for deep analysis.
 
-It uses trusted, widely accepted sources (such as Sentinel‑2), and records key metadata like:
-
-- acquisition date
-- cloud cover
-- coverage footprint
-
-### 3) Compare imagery over time
-MineWatch compares a baseline image to a newer image to identify meaningful change.
-
-For the MVP, the focus is intentionally practical:
-
-- vegetation loss
-- vegetation gain (rehabilitation)
-- “no meaningful change”
+### 3) Compare imagery with Scientific Indices
+MineWatch uses three primary indices to detect change:
+- **NDVI (Vegetation):** Detects land clearing and rehabilitation progress.
+- **BSI (Bare Soil):** Identifies new excavations, pits, and road construction.
+- **NDWI (Water):** Monitors tailings ponds and flooded mining pits.
 
 ### 4) Show results on a map
-Users can view:
-
-- the lease boundary
-- the surrounding buffer zone
-- highlighted change areas (“hotspots”)
+Users can view the lease boundary, buffer zones, and highlighted change "hotspots" rendered as clickable polygons on the interactive map.
 
 This is the fastest way for a non-specialist to understand what happened.
 

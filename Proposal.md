@@ -41,15 +41,14 @@ The product is intentionally focused: **reliable, repeatable analysis that suppo
 ## Product today (current build)
 This repository already includes:
 
-- Web dashboard with interactive map
-- Mine boundary setup (GeoJSON)
-- Satellite metadata ingestion via STAC (Sentinel‑2 L2A)
-- Persisted analysis runs + results storage
-- Alert list + report generation (PDF)
+- **Full-spectrum monitoring:** Real-time calculation of NDVI (Vegetation health), BSI (Bare Soil/Excavation), and NDWI (Water ingress).
+- **Automated STAC Ingestion:** Direct integration with planetary-scale datasets (Sentinel-2 L2A).
+- **Dedicated Project Settings:** Unified site configuration for project managers.
+- **Spatial Change Analysis:** Comparative temporal analysis with vectorized change polygons.
+- **Alerts + Reporting:** High-fidelity PDF report generation for audit compliance.
 
 Near-term enhancement:
-
-- replace placeholder change zones with **real NDVI change detection**
+- automated scheduling of STAC sync jobs.
 
 ---
 

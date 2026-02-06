@@ -4,60 +4,45 @@ MineWatch is a web application that helps teams monitor land-use and environment
 
 Current capabilities:
 
-- **Mine boundary setup** (upload/paste GeoJSON)
-- **Satellite metadata ingestion via STAC** (Sentinel‑2 L2A using Microsoft Planetary Computer)
-- **Analysis runs** (currently generates demo change zones/alerts; pipeline is structured to become NDVI-based next)
-- **Interactive map** (renders boundary, buffer, zones; auto-zooms to your saved boundary)
-- **Alerts + PDF report generation**
+- **Scientific Analysis Pipeline:** Real-time calculation of **NDVI** (Vegetation), **BSI** (Bare Soil), and **NDWI** (Water) from multi-spectral Sentinel-2 bands.
+- **Dedicated Settings Tab:** Full-screen project configuration for Site Name, Description, GeoJSON boundary upload, and Buffer zone.
+- **Satellite Ingestion via STAC:** Metadata search and automated band download (Red, Green, Blue, NIR, SWIR1) from Microsoft Planetary Computer.
+- **Interactive Map:** Renders boundaries, buffer zones, and scientific change overlays; features reactive zoom to latest AOI.
+- **Alerts + PDF Reports:** Automated detection of significant land changes with PDF summary export.
 
 ## Repository structure
 
-- `backend/` FastAPI + SQLite API
+- `backend/` FastAPI + SQLite API + Scientific Utilities
 - `src/` React + Vite frontend
+- `FAQ.md` Comprehensive project Q&A
 
 ## Prerequisites
 
 - Node.js 18+
-- Python 3.10+ recommended (Windows: use a project-local venv/conda env that is writable)
+- Python 3.10+ recommended (with `rasterio`, `numpy`, `shapely`, `pystac`)
 
-## Run the backend (FastAPI)
+## Run the App
 
-1) Create/activate an environment
+1. **Start the Backend (Terminal 1):**
+   ```sh
+   python -m pip install -r backend/requirements.txt
+   python -m backend.main
+   ```
 
-2) Install backend deps:
-
-```sh
-python -m pip install -r backend/requirements.txt
-```
-
-3) Start the API:
-
-```sh
-python -m uvicorn backend.main:app --reload --port 8000
-```
-
-Health check:
-
-- `GET http://127.0.0.1:8000/health`
-
-## Run the frontend (React)
-
-```sh
-npm install
-npm run dev
-```
-
-Frontend:
-
-- `http://localhost:8080/dashboard`
+2. **Start the Frontend (Terminal 2):**
+   ```sh
+   npm install
+   npm run dev
+   ```
 
 ## How to use (happy path)
 
-1) Open the Dashboard.
-2) In **Mine Area Setup**, paste or upload your boundary GeoJSON and click **Save**.
-3) In **Satellite Source**, click **Ingest via STAC**.
-4) Click **Refresh** to create an analysis run.
-5) Click **Generate Report** to download a PDF for the current run.
+1. Open the [Dashboard](http://localhost:8080/dashboard).
+2. Go to the **Settings** tab.
+3. Paste or upload your boundary GeoJSON, set your buffer, and click **Save Configuration**.
+4. In the **Satellite Imagery** tab, click **Run STAC Ingest Job** to find latest scenes.
+5. In **Change Analysis**, click **Run New Analysis** to compare indices between dates.
+6. Check **Alerts** and click **Generate Report** to download the findings.
 
 ## Key API endpoints
 
