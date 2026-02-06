@@ -58,8 +58,13 @@ def _utc_now_iso() -> str:
 
 
 def get_db() -> sqlite3.Connection:
-    conn = sqlite3.connect(DB_PATH)
+    # Use timeout and check_same_thread to handle concurrent requests better
+    conn = sqlite3.connect(DB_PATH, timeout=30.0, check_same_thread=False)
     conn.row_factory = sqlite3.Row
+    # Enable WAL mode for better concurrent access
+    conn.execute("PRAGMA journal_mode=WAL")
+    # Set busy timeout
+    conn.execute("PRAGMA busy_timeout=30000")
     return conn
 
 
