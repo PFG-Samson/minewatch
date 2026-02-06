@@ -18,13 +18,24 @@ export function ImageryView() {
     });
 
     const ingestMutation = useMutation({
-        mutationFn: () => runStacIngestJob({ max_items: 5, cloud_cover_lte: 15 }),
-        onSuccess: () => {
-            toast({ title: 'Ingestion complete', description: 'New scenes discovered and registered.' });
+        mutationFn: () => runStacIngestJob({ max_items: 20, cloud_cover_lte: 20 }),
+        onSuccess: (data) => {
+            if (data.length > 0) {
+                toast({
+                    title: 'Sync Complete',
+                    description: `${data.length} new scenes discovered and registered.`
+                });
+            } else {
+                toast({
+                    title: 'No New Scenes',
+                    description: 'No additional scenes under 20% cloud cover were found for this area.',
+                    variant: 'destructive'
+                });
+            }
             void scenesQuery.refetch();
         },
         onError: (err) => {
-            toast({ title: 'Ingestion failed', description: err instanceof Error ? err.message : 'Unable to ingest imagery.' });
+            toast({ title: 'Sync Failed', description: err instanceof Error ? err.message : 'Unable to reach STAC API.' });
         },
     });
 

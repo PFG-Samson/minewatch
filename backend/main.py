@@ -10,6 +10,7 @@ from urllib.request import Request, urlopen
 
 from contextlib import asynccontextmanager
 import uvicorn
+import requests
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -562,11 +563,9 @@ def _stac_search(*, bbox: list[float], collection: str, max_items: int, cloud_co
     if cloud_cover_lte is not None:
         body["query"] = {"eo:cloud_cover": {"lte": cloud_cover_lte}}
 
-    data = json.dumps(body).encode("utf-8")
-    req = Request(url, data=data, headers={"Content-Type": "application/json"}, method="POST")
-    with urlopen(req, timeout=30) as resp:
-        raw = resp.read().decode("utf-8")
-    return json.loads(raw)
+    resp = requests.post(url, json=body, timeout=30)
+    resp.raise_for_status()
+    return resp.json()
 
 
 @app.post("/jobs/ingest-stac", response_model=list[ImagerySceneOut])
@@ -590,6 +589,10 @@ def ingest_stac_job(payload: StacIngestJobCreate) -> list[ImagerySceneOut]:
         )
 
         features = search.get("features") or []
+        if not features:
+            conn.commit()
+            return []
+
         now = _utc_now_iso()
         created: list[ImagerySceneOut] = []
 
@@ -599,6 +602,11 @@ def ingest_stac_job(payload: StacIngestJobCreate) -> list[ImagerySceneOut]:
             cloud = props.get("eo:cloud_cover")
             uri = item.get("id")
             footprint = item.get("geometry")
+
+            # Check if scene already exists to avoid duplicates
+            existing = conn.execute("SELECT id FROM imagery_scene WHERE uri = ?", (str(uri),)).fetchone()
+            if existing:
+                continue
 
             cur = conn.execute(
                 """
@@ -635,6 +643,9 @@ def ingest_stac_job(payload: StacIngestJobCreate) -> list[ImagerySceneOut]:
 
         conn.commit()
         return created
+    except Exception as e:
+        print(f"STAC Ingest Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
     finally:
         conn.close()
 
