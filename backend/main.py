@@ -8,6 +8,8 @@ from io import BytesIO
 from typing import Any, Optional
 from urllib.request import Request, urlopen
 
+from contextlib import asynccontextmanager
+import uvicorn
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -20,7 +22,20 @@ from reportlab.pdfgen import canvas
 from backend.analysis_pipeline import ImageryScene, run_analysis
 from backend.utils.imagery_utils import generate_rgb_png, CACHE_DIR
 
-app = FastAPI(title="MineWatch API", version="0.1.0")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup logic
+    init_db()
+    yield
+    # Shutdown logic (optional)
+    pass
+
+
+app = FastAPI(
+    title="MineWatch API", 
+    version="0.1.0",
+    lifespan=lifespan
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -323,11 +338,6 @@ class AlertOut(BaseModel):
     location: str
     severity: str
     created_at: str
-
-
-@app.on_event("startup")
-def _on_startup() -> None:
-    init_db()
 
 
 @app.get("/health")
@@ -829,3 +839,7 @@ def list_alerts(limit: int = 50) -> list[AlertOut]:
         ]
     finally:
         conn.close()
+
+
+if __name__ == "__main__":
+    uvicorn.run("backend.main:app", host="0.0.0.0", port=8000, reload=True)
