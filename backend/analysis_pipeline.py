@@ -193,16 +193,16 @@ def _get_demo_results() -> tuple[list[Zone], list[Alert]]:
     alerts = [
         Alert(
             alert_type="vegetation_loss",
-            title="Vegetation loss near quarry lake",
-            description="NDVI analysis shows decline in vegetation cover on the western ridge of Mpape quarry.",
-            location="Mpape West Ridge",
+            title="Vegetation loss detected in operational zone",
+            description="NDVI analysis shows decline in vegetation cover on the site's western ridge.",
+            location="West Ridge Area",
             severity="high",
         ),
         Alert(
             alert_type="boundary_breach",
             title="Unauthorized access detected",
-            description="Movement patterns suggest potential trespassing in the restricted lake sector.",
-            location="Quarry Lake Restricted Area",
+            description="Movement patterns suggest potential trespassing in restricted sectors.",
+            location="Restricted Ops Zone",
             severity="medium",
         ),
     ]

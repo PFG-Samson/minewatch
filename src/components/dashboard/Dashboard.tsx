@@ -42,6 +42,9 @@ export function Dashboard() {
   const didInitRunRef = useRef(false);
   const [bufferKm, setBufferKm] = useState<string>('2');
   const [boundaryText, setBoundaryText] = useState<string>('');
+  const [siteName, setSiteName] = useState<string>('');
+  const [siteDescription, setSiteDescription] = useState<string>('');
+  const [previewBoundary, setPreviewBoundary] = useState<Record<string, unknown> | null>(null);
 
   const alertsQuery = useQuery({
     queryKey: ['alerts'],
@@ -98,7 +101,24 @@ export function Dashboard() {
     if (!mineAreaQuery.data) return;
     setBufferKm(String(mineAreaQuery.data.buffer_km));
     setBoundaryText(JSON.stringify(mineAreaQuery.data.boundary, null, 2));
+    setSiteName(mineAreaQuery.data.name);
+    setSiteDescription(mineAreaQuery.data.description || '');
   }, [mineAreaQuery.data]);
+
+  // Effect to parse boundary text for on-the-fly preview
+  useEffect(() => {
+    if (!boundaryText) {
+      setPreviewBoundary(null);
+      return;
+    }
+    try {
+      const parsed = JSON.parse(boundaryText);
+      setPreviewBoundary(parsed);
+    } catch (e) {
+      // Silently fail preview on malformed JSON while typing
+      setPreviewBoundary(null);
+    }
+  }, [boundaryText]);
 
   const createRunMutation = useMutation({
     mutationFn: () => createAnalysisRun({}),
@@ -115,7 +135,12 @@ export function Dashboard() {
       if (!Number.isFinite(km) || km < 0) {
         throw new Error('Invalid buffer distance');
       }
-      return upsertMineArea({ name: 'Mine Area', boundary: parsed, buffer_km: km });
+      return upsertMineArea({
+        name: siteName || 'Mine Area',
+        description: siteDescription,
+        boundary: parsed,
+        buffer_km: km
+      });
     },
     onSuccess: () => {
       toast({ title: 'Saved', description: 'Mine area configuration saved.' });
@@ -153,8 +178,8 @@ export function Dashboard() {
         {/* Header */}
         <header className="flex items-center justify-between px-6 py-4 border-b border-border bg-card/50 backdrop-blur-sm">
           <div>
-            <h1 className="text-xl font-semibold text-foreground">Mpape Crushed Rock Project</h1>
-            <p className="text-sm text-muted-foreground">Abuja • FCT, Nigeria</p>
+            <h1 className="text-xl font-semibold text-foreground">{siteName || 'Mine Project'}</h1>
+            <p className="text-sm text-muted-foreground">{mineAreaQuery.data ? 'Monitoring Site' : 'New Configuration'}</p>
           </div>
           <div className="flex items-center gap-3">
             <Button variant="outline" size="sm" className="gap-2">
@@ -240,7 +265,8 @@ export function Dashboard() {
                     showBoundary={showBoundary}
                     runId={currentRunId}
                     mineAreaBoundary={mineAreaQuery.data?.boundary ?? null}
-                    bufferKm={mineAreaQuery.data?.buffer_km ?? null}
+                    previewBoundary={previewBoundary}
+                    bufferKm={Number(bufferKm) || null}
                   />
                 </motion.div>
 
@@ -290,7 +316,8 @@ export function Dashboard() {
                     showBoundary={showBoundary}
                     runId={currentRunId}
                     mineAreaBoundary={mineAreaQuery.data?.boundary ?? null}
-                    bufferKm={mineAreaQuery.data?.buffer_km ?? null}
+                    previewBoundary={previewBoundary}
+                    bufferKm={Number(bufferKm) || null}
                   />
                   <div className="absolute top-4 right-4 bg-background/80 backdrop-blur-sm p-3 rounded-lg border border-border z-[1000] w-64 shadow-lg">
                     <LayerControl layers={layers} onToggle={handleLayerToggle} />
@@ -303,68 +330,126 @@ export function Dashboard() {
             {activeNav === 'analysis' && <AnalysisView />}
             {activeNav === 'alerts' && <AlertsView />}
             {activeNav === 'reports' && <ReportsView currentRunId={currentRunId} />}
+
+            {activeNav === 'settings' && (
+              <div className="max-w-4xl mx-auto space-y-8">
+                <div>
+                  <h2 className="text-3xl font-bold text-foreground mb-2">Project Settings</h2>
+                  <p className="text-muted-foreground">Configure your mine lease boundary and monitoring parameters.</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-6">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Core Configuration</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="s-site-name">Project Name</Label>
+                          <Input
+                            id="s-site-name"
+                            value={siteName}
+                            onChange={(e) => setSiteName(e.target.value)}
+                            placeholder="e.g. Northern Mine Lease"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="s-description">Description</Label>
+                          <Textarea
+                            id="s-description"
+                            value={siteDescription}
+                            onChange={(e) => setSiteDescription(e.target.value)}
+                            placeholder="Describe the project scope and location..."
+                            className="min-h-[80px]"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="s-buffer-km">Monitoring Buffer (km)</Label>
+                          <Input
+                            id="s-buffer-km"
+                            type="number"
+                            value={bufferKm}
+                            onChange={(e) => setBufferKm(e.target.value)}
+                            min={0}
+                            step={0.1}
+                          />
+                          <p className="text-xs text-muted-foreground">The system will analyze STAC imagery within this radius of your boundary center.</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Boundary Definition</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="s-boundary-file">Upload GeoJSON</Label>
+                          <Input
+                            id="s-boundary-file"
+                            type="file"
+                            accept=".geojson,application/geo+json,application/json"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              const reader = new FileReader();
+                              reader.onload = () => {
+                                const text = typeof reader.result === 'string' ? reader.result : '';
+                                setBoundaryText(text);
+                              };
+                              reader.readAsText(file);
+                            }}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="s-boundary-text">Manual GeoJSON (WGS84)</Label>
+                          <Textarea
+                            id="s-boundary-text"
+                            value={boundaryText}
+                            onChange={(e) => setBoundaryText(e.target.value)}
+                            placeholder="Paste a GeoJSON Polygon or FeatureCollection here"
+                            className="min-h-[200px] font-mono text-xs"
+                          />
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Button
+                      size="lg"
+                      className="w-full"
+                      onClick={() => saveMineAreaMutation.mutate()}
+                      disabled={saveMineAreaMutation.isPending}
+                    >
+                      {saveMineAreaMutation.isPending ? 'Saving...' : 'Save Configuration'}
+                    </Button>
+                  </div>
+
+                  <div className="space-y-6">
+                    <Card className="h-full">
+                      <CardHeader>
+                        <CardTitle>Boundary Preview</CardTitle>
+                      </CardHeader>
+                      <CardContent className="h-[400px] p-0 overflow-hidden rounded-b-xl border-t">
+                        <MapView
+                          showChanges={false}
+                          showAlerts={false}
+                          showBoundary={true}
+                          mineAreaBoundary={mineAreaQuery.data?.boundary ?? null}
+                          previewBoundary={previewBoundary}
+                          bufferKm={Number(bufferKm) || null}
+                        />
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Right sidebar - Only show on dashboard and hidden on map */}
           {activeNav === 'dashboard' && (
             <aside className="w-80 border-l border-border bg-card/30 p-4 overflow-y-auto hidden lg:block">
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base">Mine Area Setup</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="buffer-km">Buffer (km)</Label>
-                    <Input
-                      id="buffer-km"
-                      type="number"
-                      value={bufferKm}
-                      onChange={(e) => setBufferKm(e.target.value)}
-                      min={0}
-                      step={0.1}
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label htmlFor="boundary-file">Boundary GeoJSON file</Label>
-                    <Input
-                      id="boundary-file"
-                      type="file"
-                      accept=".geojson,application/geo+json,application/json"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        const reader = new FileReader();
-                        reader.onload = () => {
-                          const text = typeof reader.result === 'string' ? reader.result : '';
-                          setBoundaryText(text);
-                        };
-                        reader.readAsText(file);
-                      }}
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label htmlFor="boundary-text">Boundary GeoJSON (paste)</Label>
-                    <Textarea
-                      id="boundary-text"
-                      value={boundaryText}
-                      onChange={(e) => setBoundaryText(e.target.value)}
-                      placeholder="Paste a GeoJSON Polygon or FeatureCollection here"
-                      className="min-h-[140px] font-mono text-xs"
-                    />
-                  </div>
-
-                  <Button
-                    className="w-full"
-                    onClick={() => saveMineAreaMutation.mutate()}
-                    disabled={saveMineAreaMutation.isPending}
-                  >
-                    Save Mine Area
-                  </Button>
-                </CardContent>
-              </Card>
-
               <LayerControl layers={layers} onToggle={handleLayerToggle} />
 
               {/* Quick stats */}

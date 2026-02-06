@@ -68,12 +68,14 @@ export type RunImageryDto = {
 
 export type MineAreaUpsertDto = {
   name: string;
+  description?: string;
   boundary: Record<string, unknown>;
   buffer_km: number;
 };
 
 export type MineAreaDto = {
   name: string;
+  description?: string;
   boundary: Record<string, unknown>;
   buffer_km: number;
   created_at: string;

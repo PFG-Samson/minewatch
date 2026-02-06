@@ -3,15 +3,9 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { getAnalysisRun, getRunImagery, type GeoJsonFeatureCollection, type RunImageryDto } from '@/lib/api';
 
-// Mpape Crushed Rock Quarry area coordinates
-const MINE_BOUNDARY: [number, number][] = [
-  [9.138, 7.490],
-  [9.140, 7.495],
-  [9.135, 7.500],
-  [9.130, 7.498],
-  [9.128, 7.492],
-  [9.132, 7.488],
-];
+// Default map center if no boundary is provided
+const DEFAULT_CENTER: [number, number] = [0, 0];
+const DEFAULT_ZOOM = 2;
 
 interface MapViewProps {
   showBaseline?: boolean;
@@ -21,6 +15,7 @@ interface MapViewProps {
   showBoundary?: boolean;
   runId?: number | null;
   mineAreaBoundary?: Record<string, unknown> | null;
+  previewBoundary?: Record<string, unknown> | null;
   bufferKm?: number | null;
 }
 
@@ -32,6 +27,7 @@ export function MapView({
   showBoundary = true,
   runId = null,
   mineAreaBoundary = null,
+  previewBoundary = null,
   bufferKm = null,
 }: MapViewProps) {
   const mapRef = useRef<HTMLDivElement>(null);
@@ -41,6 +37,7 @@ export function MapView({
   const lastBoundaryKeyRef = useRef<string | null>(null);
   const layersRef = useRef<{
     boundary?: L.Layer;
+    preview?: L.Layer;
     buffer?: L.Layer;
     extent?: L.Rectangle;
     zonesLayer?: L.GeoJSON;
@@ -113,10 +110,10 @@ export function MapView({
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
 
-    // Initialize map centered on mine area
+    // Initialize map with a neutral state
     const map = L.map(mapRef.current, {
-      center: [9.135, 7.493],
-      zoom: 15,
+      center: DEFAULT_CENTER,
+      zoom: DEFAULT_ZOOM,
       zoomControl: true,
       attributionControl: true,
     });
@@ -127,26 +124,8 @@ export function MapView({
       maxZoom: 18,
     }).addTo(map);
 
-    // Default boundary + buffer (can be replaced by saved mine area GeoJSON)
-    const boundary = L.polygon(MINE_BOUNDARY, {
-      color: '#0d9488',
-      weight: 3,
-      fillColor: '#0d9488',
-      fillOpacity: 0.1,
-      dashArray: '10, 5',
-    }).addTo(map);
-    layersRef.current.boundary = boundary;
-
-    const center = boundary.getBounds().getCenter();
-    const buffer = L.circle(center, {
-      radius: 2000,
-      color: '#64748b',
-      weight: 2,
-      fillColor: '#64748b',
-      fillOpacity: 0.05,
-      dashArray: '5, 10',
-    }).addTo(map);
-    layersRef.current.buffer = buffer;
+    // No default layers added here anymore. 
+    // All boundary/buffer rendering is handled by the reactive effect below.
 
     mapInstanceRef.current = map;
 
@@ -168,65 +147,94 @@ export function MapView({
       map.removeLayer(layersRef.current.buffer);
       layersRef.current.buffer = undefined;
     }
-    if (layersRef.current.extent) {
-      map.removeLayer(layersRef.current.extent);
-      layersRef.current.extent = undefined;
+    if (layersRef.current.preview) {
+      map.removeLayer(layersRef.current.preview);
+      layersRef.current.preview = undefined;
     }
 
     if (!showBoundary) return;
 
-    const boundaryLayer = mineAreaBoundary
-      ? L.geoJSON(mineAreaBoundary as any, {
-        style: {
-          color: '#0d9488',
-          weight: 3,
-          fillColor: '#0d9488',
-          fillOpacity: 0.1,
-          dashArray: '10, 5',
-        },
-      })
-      : L.polygon(MINE_BOUNDARY, {
-        color: '#0d9488',
-        weight: 3,
-        fillColor: '#0d9488',
-        fillOpacity: 0.1,
-        dashArray: '10, 5',
-      });
+    // 2. Render Saved Boundary (if showBoundary is on and there's no preview)
+    if (showBoundary) {
+      const boundaryLayer = mineAreaBoundary
+        ? L.geoJSON(mineAreaBoundary as any, {
+          style: {
+            color: '#0d9488',
+            weight: 3,
+            fillColor: '#0d9488',
+            fillOpacity: 0.1,
+            dashArray: '10, 5',
+          },
+        })
+        : null;
 
-    boundaryLayer.addTo(map);
-    layersRef.current.boundary = boundaryLayer;
+      if (boundaryLayer) {
+        boundaryLayer.addTo(map);
+        layersRef.current.boundary = boundaryLayer;
 
-    const bounds = (boundaryLayer as any).getBounds?.();
-    if (bounds) {
-      const rect = L.rectangle(bounds, {
-        color: '#22c55e',
-        weight: 1,
-        fillOpacity: 0,
-        dashArray: '4, 6',
-      });
-      rect.addTo(map);
-      layersRef.current.extent = rect;
-
-      const boundaryKey = mineAreaBoundary ? JSON.stringify(mineAreaBoundary) : null;
-      if (boundaryKey && boundaryKey !== lastBoundaryKeyRef.current) {
-        lastBoundaryKeyRef.current = boundaryKey;
-        map.fitBounds(bounds.pad(0.2));
+        // Only zoom to saved boundary if we don't have a preview
+        if (!previewBoundary) {
+          const bounds = (boundaryLayer as any).getBounds?.();
+          if (bounds) {
+            const boundaryKey = mineAreaBoundary ? JSON.stringify(mineAreaBoundary) : 'default';
+            if (boundaryKey !== lastBoundaryKeyRef.current) {
+              lastBoundaryKeyRef.current = boundaryKey;
+              map.fitBounds(bounds.pad(0.2));
+            }
+          }
+        }
       }
     }
 
-    const km = typeof bufferKm === 'number' && Number.isFinite(bufferKm) ? bufferKm : 2;
-    const center = bounds?.getCenter ? bounds.getCenter() : L.latLng(9.135, 7.493);
+    // 3. Render Preview Boundary (Highest Priority)
+    if (previewBoundary) {
+      try {
+        const previewLayer = L.geoJSON(previewBoundary as any, {
+          style: {
+            color: '#fbbf24', // Amber for preview
+            weight: 4,
+            fillColor: '#fbbf24',
+            fillOpacity: 0.2,
+            dashArray: '5, 5',
+          },
+        }).addTo(map);
+        layersRef.current.preview = previewLayer;
 
-    const bufferLayer = L.circle(center, {
-      radius: km * 1000,
-      color: '#64748b',
-      weight: 2,
-      fillColor: '#64748b',
-      fillOpacity: 0.05,
-      dashArray: '5, 10',
-    }).addTo(map);
-    layersRef.current.buffer = bufferLayer;
-  }, [mineAreaBoundary, bufferKm, showBoundary]);
+        const pBounds = previewLayer.getBounds();
+        if (pBounds.isValid()) {
+          map.fitBounds(pBounds.pad(0.2));
+        }
+      } catch (e) {
+        console.error("Failed to render preview boundary", e);
+      }
+    }
+
+    // 4. Render Buffer
+    const km = typeof bufferKm === 'number' && Number.isFinite(bufferKm) ? bufferKm : 2;
+    // Use preview bounds if available, else saved bounds
+    const activeLayer = layersRef.current.preview || layersRef.current.boundary;
+
+    // Only render buffer if we have an active layer (user defined area)
+    if (activeLayer) {
+      try {
+        const bounds = (activeLayer as any).getBounds?.();
+        if (bounds && bounds.isValid()) {
+          const center = bounds.getCenter();
+          const bufferLayer = L.circle(center, {
+            radius: km * 1000,
+            color: '#64748b',
+            weight: 2,
+            fillColor: '#64748b',
+            fillOpacity: 0.05,
+            dashArray: '5, 10',
+          }).addTo(map);
+          layersRef.current.buffer = bufferLayer;
+        }
+      } catch (e) {
+        console.error("Failed to render buffer", e);
+      }
+    }
+  }, [mineAreaBoundary, previewBoundary, bufferKm, showBoundary]);
 
   // Handle layer visibility
   useEffect(() => {

@@ -69,6 +69,7 @@ def init_db() -> None:
             CREATE TABLE IF NOT EXISTS mine_area (
                 id INTEGER PRIMARY KEY CHECK (id = 1),
                 name TEXT NOT NULL,
+                description TEXT,
                 boundary_geojson TEXT NOT NULL,
                 buffer_km REAL NOT NULL,
                 created_at TEXT NOT NULL,
@@ -98,6 +99,12 @@ def init_db() -> None:
             conn.execute("ALTER TABLE analysis_run ADD COLUMN baseline_scene_id INTEGER")
         if "latest_scene_id" not in existing_cols:
             conn.execute("ALTER TABLE analysis_run ADD COLUMN latest_scene_id INTEGER")
+
+        mine_cols = {
+            r["name"] for r in conn.execute("PRAGMA table_info(mine_area)").fetchall()
+        }
+        if "description" not in mine_cols:
+            conn.execute("ALTER TABLE mine_area ADD COLUMN description TEXT")
 
         conn.execute(
             """
@@ -252,12 +259,14 @@ def get_run_imagery(run_id: int) -> dict[str, Any]:
 
 class MineAreaUpsert(BaseModel):
     name: str = Field(default="Mine Area")
+    description: Optional[str] = None
     boundary: dict[str, Any]
     buffer_km: float = Field(default=2.0, ge=0.0)
 
 
 class MineAreaOut(BaseModel):
     name: str
+    description: Optional[str] = None
     boundary: dict[str, Any]
     buffer_km: float
     created_at: str
@@ -336,6 +345,7 @@ def get_mine_area() -> MineAreaOut:
 
         return MineAreaOut(
             name=row["name"],
+            description=row["description"],
             boundary=json.loads(row["boundary_geojson"]),
             buffer_km=float(row["buffer_km"]),
             created_at=row["created_at"],
@@ -354,19 +364,19 @@ def upsert_mine_area(payload: MineAreaUpsert) -> MineAreaOut:
         if existing is None:
             conn.execute(
                 """
-                INSERT INTO mine_area (id, name, boundary_geojson, buffer_km, created_at, updated_at)
-                VALUES (1, ?, ?, ?, ?, ?)
+                INSERT INTO mine_area (id, name, description, boundary_geojson, buffer_km, created_at, updated_at)
+                VALUES (1, ?, ?, ?, ?, ?, ?)
                 """,
-                (payload.name, json.dumps(payload.boundary), payload.buffer_km, now, now),
+                (payload.name, payload.description, json.dumps(payload.boundary), payload.buffer_km, now, now),
             )
         else:
             conn.execute(
                 """
                 UPDATE mine_area
-                SET name = ?, boundary_geojson = ?, buffer_km = ?, updated_at = ?
+                SET name = ?, description = ?, boundary_geojson = ?, buffer_km = ?, updated_at = ?
                 WHERE id = 1
                 """,
-                (payload.name, json.dumps(payload.boundary), payload.buffer_km, now),
+                (payload.name, payload.description, json.dumps(payload.boundary), payload.buffer_km, now),
             )
 
         conn.commit()
