@@ -34,11 +34,10 @@ def download_sentinel2_bands(stac_item_id: str, bands: List[str]) -> Dict[str, s
     for band in bands:
         if band in assets:
             asset_url = assets[band]["href"]
-            # We add the signing token via the Planetary Computer signing API if needed, 
-            # but for Sentinel-2 L2A on PC, some assets are public or require a simple token.
-            # PC usually requires signing the URL.
-            
-            signed_url_resp = requests.get(f"https://planetarycomputer.microsoft.com/api/sas/v1/sign?url={asset_url}")
+            # PC requires signing the URL with proper encoding
+            import urllib.parse
+            encoded_url = urllib.parse.quote(asset_url, safe='')
+            signed_url_resp = requests.get(f"https://planetarycomputer.microsoft.com/api/sas/v1/sign?href={encoded_url}")
             signed_url = signed_url_resp.json().get("href", asset_url)
             
             file_name = f"{stac_item_id}_{band}.tif"
