@@ -63,22 +63,22 @@ def run_analysis(
             raise ValueError("No boundary geometry found in mine_area")
 
         # 2. Process Baseline
-        b_red, transform = clip_raster_to_geometry(baseline_paths["B04"], geometry)
-        b_nir, _ = clip_raster_to_geometry(baseline_paths["B08"], geometry)
-        b_green, _ = clip_raster_to_geometry(baseline_paths["B03"], geometry)
-        b_blue, _ = clip_raster_to_geometry(baseline_paths["B02"], geometry)
-        b_swir, _ = clip_raster_to_geometry(baseline_paths["B11"], geometry)
+        b_red, transform, b_crs = clip_raster_to_geometry(baseline_paths["B04"], geometry)
+        b_nir, _, _ = clip_raster_to_geometry(baseline_paths["B08"], geometry)
+        b_green, _, _ = clip_raster_to_geometry(baseline_paths["B03"], geometry)
+        b_blue, _, _ = clip_raster_to_geometry(baseline_paths["B02"], geometry)
+        b_swir, _, _ = clip_raster_to_geometry(baseline_paths["B11"], geometry)
 
         b_ndvi = calculate_ndvi(b_red, b_nir)
         b_ndwi = calculate_ndwi(b_green, b_nir)
         b_bsi = calculate_bsi(b_red, b_blue, b_nir, b_swir)
 
         # 3. Process Latest
-        l_red, _ = clip_raster_to_geometry(latest_paths["B04"], geometry)
-        l_nir, _ = clip_raster_to_geometry(latest_paths["B08"], geometry)
-        l_green, _ = clip_raster_to_geometry(latest_paths["B03"], geometry)
-        l_blue, _ = clip_raster_to_geometry(latest_paths["B02"], geometry)
-        l_swir, _ = clip_raster_to_geometry(latest_paths["B11"], geometry)
+        l_red, _, _ = clip_raster_to_geometry(latest_paths["B04"], geometry)
+        l_nir, _, _ = clip_raster_to_geometry(latest_paths["B08"], geometry)
+        l_green, _, _ = clip_raster_to_geometry(latest_paths["B03"], geometry)
+        l_blue, _, _ = clip_raster_to_geometry(latest_paths["B02"], geometry)
+        l_swir, _, _ = clip_raster_to_geometry(latest_paths["B11"], geometry)
 
         l_ndvi = calculate_ndvi(l_red, l_nir)
         l_ndwi = calculate_ndwi(l_green, l_nir)
@@ -91,7 +91,7 @@ def run_analysis(
         # Vegetation Loss (NDVI drop > 0.15)
         ndvi_diff = l_ndvi - b_ndvi
         veg_loss_mask = (ndvi_diff < -0.15).astype(np.uint8)
-        veg_loss_features = vectorize_mask(veg_loss_mask, transform)
+        veg_loss_features = vectorize_mask(veg_loss_mask, transform, b_crs)
         for feat in veg_loss_features:
             area = _calculate_area(feat["geometry"])
             if area > 0.1: # Min 0.1 ha to show up
@@ -108,7 +108,7 @@ def run_analysis(
         # Bare Soil Expansion (BSI increase > 0.1) - Mining Pits
         bsi_diff = l_bsi - b_bsi
         soil_gain_mask = (bsi_diff > 0.1).astype(np.uint8)
-        soil_features = vectorize_mask(soil_gain_mask, transform)
+        soil_features = vectorize_mask(soil_gain_mask, transform, b_crs)
         for feat in soil_features:
             area = _calculate_area(feat["geometry"])
             if area > 0.1:
@@ -124,7 +124,7 @@ def run_analysis(
         # Water Change (NDWI delta > 0.2)
         ndwi_diff = l_ndwi - b_ndwi
         water_gain_mask = (ndwi_diff > 0.2).astype(np.uint8)
-        water_features = vectorize_mask(water_gain_mask, transform)
+        water_features = vectorize_mask(water_gain_mask, transform, b_crs)
         for feat in water_features:
             area = _calculate_area(feat["geometry"])
             if area > 0.05:

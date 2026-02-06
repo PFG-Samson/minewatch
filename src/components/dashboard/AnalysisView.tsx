@@ -1,8 +1,42 @@
 import { motion } from 'framer-motion';
-import { TrendingUp, Activity, BarChart3, Info } from 'lucide-react';
+import { TrendingUp, Activity, BarChart3, Info, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useQuery } from '@tanstack/react-query';
+import { listAnalysisRuns, getAnalysisRun } from '@/lib/api';
 
 export function AnalysisView() {
+    const { data: latestRun, isLoading } = useQuery({
+        queryKey: ['latestAnalysisRun'],
+        queryFn: async () => {
+            const runs = await listAnalysisRuns(1);
+            if (runs.length === 0) return null;
+            return getAnalysisRun(runs[0].id);
+        }
+    });
+
+    if (isLoading) {
+        return (
+            <div className="h-full flex items-center justify-center p-12">
+                <Loader2 className="w-8 h-8 text-primary animate-spin" />
+            </div>
+        );
+    }
+
+    const zones = latestRun?.zones.features || [];
+    const stats = zones.reduce((acc, f) => {
+        const type = f.properties?.zone_type as string;
+        const area = f.properties?.area_ha as number;
+        acc[type] = (acc[type] || 0) + area;
+        return acc;
+    }, {} as Record<string, number>);
+
+    const totalDisturbed = Object.values(stats).reduce((a, b) => a + b, 0);
+
+    // For demo purposes and visual balance, we define some baseline types
+    const vegLoss = stats['vegetation_loss'] || 0;
+    const miningExpansion = stats['mining_expansion'] || 0;
+    const waterChanges = stats['water_accumulation'] || 0;
+
     return (
         <div className="space-y-6">
             <div>
@@ -23,7 +57,9 @@ export function AnalysisView() {
                             <div className="text-center">
                                 <BarChart3 className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
                                 <p className="text-sm text-muted-foreground">Interactive trend charts require additional time-series data ingestions.</p>
-                                <p className="text-xs text-muted-foreground/60 mt-1">Current data point: 0.42 (Healthy Sparsity)</p>
+                                <p className="text-xs text-muted-foreground/60 mt-1">
+                                    {latestRun ? `Latest Analysis: ${new Date(latestRun.run.created_at).toLocaleDateString()}` : 'No analysis runs yet.'}
+                                </p>
                             </div>
                         </div>
                     </CardContent>
@@ -34,39 +70,58 @@ export function AnalysisView() {
                         <CardHeader>
                             <CardTitle className="text-sm font-medium flex items-center gap-2">
                                 <Activity className="w-4 h-4 text-info" />
-                                Land Disturbance Split
+                                Land Disturbance Split (Hectares)
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="space-y-4">
-                                <div>
-                                    <div className="flex justify-between text-xs mb-1">
-                                        <span className="text-muted-foreground">Natural Vegetation</span>
-                                        <span className="font-semibold">68%</span>
+                            {!latestRun ? (
+                                <p className="text-xs text-muted-foreground text-center py-4">No data available from latest run.</p>
+                            ) : (
+                                <div className="space-y-4">
+                                    <div>
+                                        <div className="flex justify-between text-xs mb-1">
+                                            <span className="text-muted-foreground">Vegetation Loss</span>
+                                            <span className="font-semibold">{vegLoss.toFixed(2)} ha</span>
+                                        </div>
+                                        <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                                            <motion.div
+                                                initial={{ width: 0 }}
+                                                animate={{ width: `${Math.min(100, (vegLoss / (totalDisturbed || 1)) * 100)}%` }}
+                                                className="h-full bg-vegetation"
+                                            />
+                                        </div>
                                     </div>
-                                    <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                                        <div className="h-full bg-vegetation" style={{ width: '68%' }} />
+                                    <div>
+                                        <div className="flex justify-between text-xs mb-1">
+                                            <span className="text-muted-foreground">Mining Expansion</span>
+                                            <span className="font-semibold">{miningExpansion.toFixed(2)} ha</span>
+                                        </div>
+                                        <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                                            <motion.div
+                                                initial={{ width: 0 }}
+                                                animate={{ width: `${Math.min(100, (miningExpansion / (totalDisturbed || 1)) * 100)}%` }}
+                                                className="h-full bg-accent"
+                                            />
+                                        </div>
                                     </div>
+                                    <div>
+                                        <div className="flex justify-between text-xs mb-1">
+                                            <span className="text-muted-foreground">Water Accumulation</span>
+                                            <span className="font-semibold">{waterChanges.toFixed(2)} ha</span>
+                                        </div>
+                                        <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                                            <motion.div
+                                                initial={{ width: 0 }}
+                                                animate={{ width: `${Math.min(100, (waterChanges / (totalDisturbed || 1)) * 100)}%` }}
+                                                className="h-full bg-alert-zone"
+                                            />
+                                        </div>
+                                    </div>
+                                    <p className="text-[10px] text-muted-foreground pt-2 border-t border-border">
+                                        Total Area Analyzed: {totalDisturbed.toFixed(2)} hectares
+                                    </p>
                                 </div>
-                                <div>
-                                    <div className="flex justify-between text-xs mb-1">
-                                        <span className="text-muted-foreground">Modified Landscape</span>
-                                        <span className="font-semibold">22%</span>
-                                    </div>
-                                    <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                                        <div className="h-full bg-accent" style={{ width: '22%' }} />
-                                    </div>
-                                </div>
-                                <div>
-                                    <div className="flex justify-between text-xs mb-1">
-                                        <span className="text-muted-foreground">Active Pits / Infrastructure</span>
-                                        <span className="font-semibold">10%</span>
-                                    </div>
-                                    <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                                        <div className="h-full bg-alert-zone" style={{ width: '10%' }} />
-                                    </div>
-                                </div>
-                            </div>
+                            )}
                         </CardContent>
                     </Card>
 
@@ -75,10 +130,11 @@ export function AnalysisView() {
                             <div className="flex gap-4">
                                 <Info className="w-5 h-5 text-primary shrink-0" />
                                 <div className="space-y-1">
-                                    <p className="text-sm font-medium text-primary">Compliance Status: Warning</p>
+                                    <p className="text-sm font-medium text-primary">Compliance Status: {totalDisturbed > 1.0 ? 'Action Required' : 'Nominal'}</p>
                                     <p className="text-xs text-muted-foreground leading-relaxed">
-                                        Detected cumulative vegetation loss exceeds the seasonal baseline by 5.2%.
-                                        Verify restorative progress in Sector East.
+                                        {totalDisturbed > 0
+                                            ? `Detected ${totalDisturbed.toFixed(2)} ha of total spatial change. Cross-reference with authorized lease boundaries.`
+                                            : "No significant spatial disturbances detected in the latest analysis cycle."}
                                     </p>
                                 </div>
                             </div>

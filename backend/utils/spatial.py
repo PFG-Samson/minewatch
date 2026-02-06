@@ -2,6 +2,7 @@ import numpy as np
 import rasterio
 from rasterio.mask import mask
 from rasterio.features import shapes
+from rasterio.warp import transform_geom, transform_bounds
 from shapely.geometry import shape, mapping
 from typing import Any, Tuple, List
 
@@ -46,20 +47,30 @@ def calculate_bsi(red: np.ndarray, blue: np.ndarray, nir: np.ndarray, swir: np.n
     bsi = np.nan_to_num(bsi, nan=0.0, posinf=0.0, neginf=0.0)
     return bsi
 
-def clip_raster_to_geometry(raster_path: str, geojson_geometry: dict) -> Tuple[np.ndarray, Any]:
-    """Clips a raster file to the provided GeoJSON geometry."""
+def clip_raster_to_geometry(raster_path: str, geojson_geometry: dict) -> Tuple[np.ndarray, Any, Any]:
+    """Clips a raster file to the provided GeoJSON geometry, handling CRS transformation."""
     with rasterio.open(raster_path) as src:
-        geoms = [shape(geojson_geometry)]
+        # Warp GeoJSON geometry to the raster's native CRS (usually UTM)
+        warped_geom = transform_geom('EPSG:4326', src.crs, geojson_geometry)
+        geoms = [shape(warped_geom)]
         out_image, out_transform = mask(src, geoms, crop=True)
-        return out_image[0], out_transform
+        return out_image[0], out_transform, src.crs
 
-def vectorize_mask(mask_array: np.ndarray, transform: Any) -> List[dict]:
-    """Converts a binary mask (numpy array) into a list of GeoJSON features."""
-    results = [
-        {
+def get_raster_bounds_4326(raster_path: str) -> List[float]:
+    """Returns [min_lat, min_lon, max_lat, max_lon] in WGS84 (EPSG:4326)."""
+    with rasterio.open(raster_path) as src:
+        # transform_bounds returns (left, bottom, right, top) -> (min_lon, min_lat, max_lon, max_lat)
+        bounds = transform_bounds(src.crs, 'EPSG:4326', *src.bounds)
+        return [bounds[1], bounds[0], bounds[3], bounds[2]]
+
+def vectorize_mask(mask_array: np.ndarray, transform: Any, src_crs: Any) -> List[dict]:
+    """Converts a binary mask (numpy array) into a list of GeoJSON features in 4326."""
+    results = []
+    for s, v in shapes(mask_array.astype(np.int16), mask=mask_array > 0, transform=transform):
+        # Warp the shape back to WGS84
+        warped_s = transform_geom(src_crs, 'EPSG:4326', s)
+        results.append({
             "properties": {"raster_value": v},
-            "geometry": mapping(shape(s))
-        }
-        for s, v in shapes(mask_array.astype(np.int16), mask=mask_array > 0, transform=transform)
-    ]
+            "geometry": warped_s
+        })
     return results

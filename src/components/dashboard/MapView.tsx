@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { getAnalysisRun, type GeoJsonFeatureCollection } from '@/lib/api';
+import { getAnalysisRun, getRunImagery, type GeoJsonFeatureCollection, type RunImageryDto } from '@/lib/api';
 
 // Mpape Crushed Rock Quarry area coordinates
 const MINE_BOUNDARY: [number, number][] = [
@@ -37,12 +37,15 @@ export function MapView({
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const [zones, setZones] = useState<GeoJsonFeatureCollection | null>(null);
+  const [imagery, setImagery] = useState<RunImageryDto | null>(null);
   const lastBoundaryKeyRef = useRef<string | null>(null);
   const layersRef = useRef<{
     boundary?: L.Layer;
     buffer?: L.Layer;
     extent?: L.Rectangle;
     zonesLayer?: L.GeoJSON;
+    baselineImagery?: L.ImageOverlay;
+    latestImagery?: L.ImageOverlay;
   }>({});
 
   useEffect(() => {
@@ -51,12 +54,22 @@ export function MapView({
     const load = async () => {
       if (!runId) {
         setZones(null);
+        setImagery(null);
         return;
       }
 
-      const data = await getAnalysisRun(runId);
-      if (cancelled) return;
-      setZones(data.zones);
+      try {
+        const [analysisData, imageryData] = await Promise.all([
+          getAnalysisRun(runId),
+          getRunImagery(runId)
+        ]);
+
+        if (cancelled) return;
+        setZones(analysisData.zones);
+        setImagery(imageryData);
+      } catch (e) {
+        console.error("Failed to load map data", e);
+      }
     };
 
     void load();
@@ -65,6 +78,37 @@ export function MapView({
       cancelled = true;
     };
   }, [runId]);
+
+  // Update Imagery Layers
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    if (layersRef.current.baselineImagery) {
+      map.removeLayer(layersRef.current.baselineImagery);
+      layersRef.current.baselineImagery = undefined;
+    }
+    if (layersRef.current.latestImagery) {
+      map.removeLayer(layersRef.current.latestImagery);
+      layersRef.current.latestImagery = undefined;
+    }
+
+    if (imagery?.baseline && showBaseline) {
+      const { url, bounds } = imagery.baseline;
+      layersRef.current.baselineImagery = L.imageOverlay(`http://localhost:8000${url}`, [
+        [bounds[0], bounds[1]],
+        [bounds[2], bounds[3]]
+      ], { opacity: 1.0 }).addTo(map);
+    }
+
+    if (imagery?.latest && showLatest) {
+      const { url, bounds } = imagery.latest;
+      layersRef.current.latestImagery = L.imageOverlay(`http://localhost:8000${url}`, [
+        [bounds[0], bounds[1]],
+        [bounds[2], bounds[3]]
+      ], { opacity: 1.0 }).addTo(map);
+    }
+  }, [imagery, showBaseline, showLatest]);
 
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
@@ -208,11 +252,12 @@ export function MapView({
     const zonesLayer = L.geoJSON(filtered as any, {
       style: (feature: any) => {
         const zoneType = String(feature?.properties?.zone_type ?? '');
-        const color = zoneType === 'vegetation_loss'
-          ? '#c2410c'
-          : zoneType === 'vegetation_gain'
-            ? '#16a34a'
-            : '#dc2626';
+        let color = '#dc2626'; // Default red
+
+        if (zoneType === 'vegetation_loss') color = '#c2410c'; // Orange/Brown
+        else if (zoneType === 'vegetation_gain') color = '#16a34a'; // Green
+        else if (zoneType === 'mining_expansion') color = '#7c3aed'; // Purple
+        else if (zoneType === 'water_accumulation') color = '#2563eb'; // Blue
 
         return {
           color,
@@ -224,19 +269,22 @@ export function MapView({
       onEachFeature: (feature: any, layer) => {
         const zoneType = String(feature?.properties?.zone_type ?? '');
         const areaHa = feature?.properties?.area_ha;
-        const color = zoneType === 'vegetation_loss'
-          ? '#c2410c'
-          : zoneType === 'vegetation_gain'
-            ? '#16a34a'
-            : '#dc2626';
+
+        const labels: Record<string, string> = {
+          'vegetation_loss': '🔻 Vegetation Loss',
+          'vegetation_gain': '🌱 Vegetation Gain',
+          'mining_expansion': '🚜 Mining Expansion',
+          'water_accumulation': '💧 Water Accumulation',
+          'alert': '⚠️ Alert Zone'
+        };
 
         layer.bindPopup(`
-          <div style="font-family: Inter, sans-serif; padding: 4px;">
-            <strong style="font-size: 14px; color: ${color};">
-              ${zoneType === 'vegetation_loss' ? '🔻 Vegetation Loss' : zoneType === 'vegetation_gain' ? '🌱 Vegetation Gain' : '⚠️ Alert Zone'}
+          <div style="font-family: Inter, sans-serif; padding: 4px; min-width: 140px;">
+            <strong style="font-size: 14px; display: block; margin-bottom: 4px;">
+              ${labels[zoneType] || 'Unknown Zone'}
             </strong>
-            <p style="margin: 8px 0 0; font-size: 13px; color: #475569;">
-              Area: <strong>${areaHa ?? 'n/a'} hectares</strong>
+            <p style="margin: 4px 0; font-size: 13px; color: #475569;">
+              Area: <strong>${areaHa ? areaHa.toFixed(2) : 'n/a'} ha</strong>
             </p>
           </div>
         `);

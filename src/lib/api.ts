@@ -31,6 +31,8 @@ export type AlertDto = {
 export type AnalysisRunCreateDto = {
   baseline_date?: string;
   latest_date?: string;
+  baseline_scene_id?: number;
+  latest_scene_id?: number;
 };
 
 export type AnalysisRunDto = {
@@ -57,6 +59,11 @@ export type GeoJsonFeatureCollection = {
 export type AnalysisRunWithZonesDto = {
   run: AnalysisRunDto;
   zones: GeoJsonFeatureCollection;
+};
+
+export type RunImageryDto = {
+  baseline: { url: string; bounds: [number, number, number, number] } | null;
+  latest: { url: string; bounds: [number, number, number, number] } | null;
 };
 
 export type MineAreaUpsertDto = {
@@ -96,6 +103,14 @@ export async function createAnalysisRun(payload: AnalysisRunCreateDto = {}): Pro
 
 export async function getAnalysisRun(runId: number): Promise<AnalysisRunWithZonesDto> {
   return request<AnalysisRunWithZonesDto>(`/analysis-runs/${encodeURIComponent(String(runId))}`);
+}
+
+export async function listAnalysisRuns(limit = 10): Promise<AnalysisRunDto[]> {
+  return request<AnalysisRunDto[]>(`/analysis-runs?limit=${encodeURIComponent(String(limit))}`);
+}
+
+export async function getRunImagery(runId: number): Promise<RunImageryDto> {
+  return request<RunImageryDto>(`/analysis-runs/${encodeURIComponent(String(runId))}/imagery`);
 }
 
 export async function getMineArea(): Promise<MineAreaDto> {

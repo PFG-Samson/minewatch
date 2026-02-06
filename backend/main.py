@@ -12,11 +12,13 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+from fastapi.staticfiles import StaticFiles
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas
 
 from backend.analysis_pipeline import ImageryScene, run_analysis
+from backend.utils.imagery_utils import generate_rgb_png, CACHE_DIR
 
 app = FastAPI(title="MineWatch API", version="0.1.0")
 
@@ -29,6 +31,10 @@ app.add_middleware(
 )
 
 DB_PATH = Path(__file__).parent / "minewatch.db"
+
+# Ensure cache dir exists and mount it
+CACHE_DIR.mkdir(parents=True, exist_ok=True)
+app.mount("/data/cache", StaticFiles(directory=CACHE_DIR), name="cache")
 
 
 def _utc_now_iso() -> str:
@@ -205,6 +211,41 @@ def get_analysis_report(run_id: int) -> Response:
             media_type="application/pdf",
             headers={"Content-Disposition": f'attachment; filename="{filename}"'},
         )
+    finally:
+        conn.close()
+
+
+@app.get("/analysis-runs/{run_id}/imagery")
+def get_run_imagery(run_id: int) -> dict[str, Any]:
+    """Returns the RGB preview URLs and bounds for the baseline and latest scenes in a run."""
+    conn = get_db()
+    try:
+        run = conn.execute("SELECT baseline_scene_id, latest_scene_id FROM analysis_run WHERE id = ?", (run_id,)).fetchone()
+        if not run:
+            raise HTTPException(status_code=404, detail="Run not found")
+
+        def get_scene_preview(scene_id: Optional[int], label: str):
+            if not scene_id:
+                return None
+            scene = conn.execute("SELECT uri FROM imagery_scene WHERE id = ?", (scene_id,)).fetchone()
+            if not scene:
+                return None
+            
+            uri = scene["uri"]
+            # These paths assume the downloader has already run
+            base_dir = Path(__file__).parent / "data" / "imagery"
+            red = base_dir / f"{uri}_B04.tif"
+            green = base_dir / f"{uri}_B03.tif"
+            blue = base_dir / f"{uri}_B02.tif"
+            
+            if red.exists() and green.exists() and blue.exists():
+                return generate_rgb_png(str(red), str(green), str(blue), f"preview_{uri}")
+            return None
+
+        return {
+            "baseline": get_scene_preview(run["baseline_scene_id"], "baseline"),
+            "latest": get_scene_preview(run["latest_scene_id"], "latest")
+        }
     finally:
         conn.close()
 
@@ -715,6 +756,36 @@ def get_analysis_run(run_id: int) -> dict[str, Any]:
             },
             "zones": {"type": "FeatureCollection", "features": features},
         }
+    finally:
+        conn.close()
+
+
+@app.get("/analysis-runs", response_model=list[AnalysisRunOut])
+def list_analysis_runs(limit: int = 50) -> list[AnalysisRunOut]:
+    conn = get_db()
+    try:
+        rows = conn.execute(
+            """
+            SELECT id, baseline_date, latest_date, baseline_scene_id, latest_scene_id, status, created_at
+            FROM analysis_run
+            ORDER BY created_at DESC
+            LIMIT ?
+            """,
+            (limit,),
+        ).fetchall()
+
+        return [
+            AnalysisRunOut(
+                id=int(r["id"]),
+                baseline_date=r["baseline_date"],
+                latest_date=r["latest_date"],
+                baseline_scene_id=r["baseline_scene_id"],
+                latest_scene_id=r["latest_scene_id"],
+                status=r["status"],
+                created_at=r["created_at"],
+            )
+            for r in rows
+        ]
     finally:
         conn.close()
 
