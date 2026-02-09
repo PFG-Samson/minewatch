@@ -55,6 +55,14 @@ def run_analysis(
         print(f"Baseline Scene: {baseline_scene.uri}")
         print(f"Latest Scene: {latest_scene.uri}")
 
+        # Validate that we're not comparing the same scene
+        if baseline_scene.uri == latest_scene.uri:
+            print("⚠️  WARNING: Baseline and latest scenes are identical")
+            print("   No meaningful change detection can be performed")
+            print("   → Please run STAC ingestion to download more scenes")
+            # Return empty results instead of demo data
+            return [], []
+
         baseline_paths = download_sentinel2_bands(baseline_scene.uri, required_bands)
         latest_paths = download_sentinel2_bands(latest_scene.uri, required_bands)
 

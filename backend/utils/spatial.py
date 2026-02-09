@@ -47,11 +47,59 @@ def calculate_bsi(red: np.ndarray, blue: np.ndarray, nir: np.ndarray, swir: np.n
     bsi = np.nan_to_num(bsi, nan=0.0, posinf=0.0, neginf=0.0)
     return bsi
 
+def _extract_geometry(geojson_input: dict) -> dict:
+    """
+    Extracts a single geometry from various GeoJSON formats.
+    
+    Handles:
+    - Geometry objects (Polygon, MultiPolygon, etc.)
+    - Feature objects
+    - FeatureCollection objects (uses first feature)
+    
+    Returns:
+        A geometry dict suitable for rasterio operations
+    
+    Raises:
+        ValueError: If geometry cannot be extracted
+    """
+    if not isinstance(geojson_input, dict):
+        raise ValueError(f"Expected dict, got {type(geojson_input)}")
+    
+    geom_type = geojson_input.get("type")
+    
+    # Already a geometry object
+    if geom_type in ["Point", "LineString", "Polygon", "MultiPoint", "MultiLineString", "MultiPolygon", "GeometryCollection"]:
+        return geojson_input
+    
+    # Feature object - extract geometry
+    if geom_type == "Feature":
+        geometry = geojson_input.get("geometry")
+        if not geometry:
+            raise ValueError("Feature has no geometry property")
+        return geometry
+    
+    # FeatureCollection - use first feature
+    if geom_type == "FeatureCollection":
+        features = geojson_input.get("features", [])
+        if not features:
+            raise ValueError("FeatureCollection has no features")
+        first_feature = features[0]
+        geometry = first_feature.get("geometry")
+        if not geometry:
+            raise ValueError("First feature has no geometry")
+        return geometry
+    
+    raise ValueError(f"Unsupported GeoJSON type: {geom_type}")
+
+
 def clip_raster_to_geometry(raster_path: str, geojson_geometry: dict) -> Tuple[np.ndarray, Any, Any]:
     """Clips a raster file to the provided GeoJSON geometry, handling CRS transformation."""
+    # Extract geometry from various GeoJSON formats
+    geometry = _extract_geometry(geojson_geometry)
+    
     with rasterio.open(raster_path) as src:
         # Warp GeoJSON geometry to the raster's native CRS (usually UTM)
-        warped_geom = transform_geom('EPSG:4326', src.crs, geojson_geometry)
+        warped_geom = transform_geom('EPSG:4326', src.crs, geometry)
         geoms = [shape(warped_geom)]
         out_image, out_transform = mask(src, geoms, crop=True)
         return out_image[0], out_transform, src.crs

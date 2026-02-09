@@ -60,6 +60,21 @@ A central reference for users and developers covering system operation, troubles
 ### Q: How are alerts generated?
 **A:** The app compares a **Baseline** scene with the **Latest** scene. If it finds a significant change (e.g., NDVI drop or BSI increase) over a specific area threshold (usually 0.5 hectares), it automatically creates a high-severity alert.
 
+### Q: Why did my analysis return no results?
+**A:** Common reasons:
+1. **Same Scene Compared:** You only have one scene in the database. The system needs at least 2 scenes from different dates to detect change.
+   - **Fix**: Run "Ingest via STAC" to download more scenes
+2. **No Significant Change:** The two scenes show no meaningful vegetation, soil, or water changes above detection thresholds.
+3. **Imagery Download Failed:** Check backend logs for download errors.
+
+### Q: How do I know if real analysis is running vs demo data?
+**A:** 
+- **Real Analysis**: Console logs show "Starting real analysis", band downloads, and "Processing baseline imagery"
+- **Demo Data**: Fixed polygon shapes at hardcoded coordinates, always the same alert messages
+- **Empty Results**: If comparing the same scene twice, you'll see a warning message
+
+After February 2026, the system no longer falls back to demo data - analysis either succeeds with real data or returns empty results/errors.
+
 ---
 
 ## 💻 Developer Notes
