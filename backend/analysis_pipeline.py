@@ -94,7 +94,6 @@ def run_analysis(
 
         # 4. Change Detection Logic
         zones: list[Zone] = []
-        alerts: list[Alert] = []
 
         # Vegetation Loss (NDVI drop > 0.15)
         ndvi_diff = l_ndvi - b_ndvi
@@ -104,14 +103,6 @@ def run_analysis(
             area = _calculate_area(feat["geometry"])
             if area > 0.1: # Min 0.1 ha to show up
                 zones.append(Zone("vegetation_loss", area, feat["geometry"]))
-                if area > 0.5:
-                    alerts.append(Alert(
-                        alert_type="vegetation_loss", 
-                        title=f"Significant vegetation loss detected ({area:.1f} ha)",
-                        description="NDVI analysis shows a sharp decline in greenery. This could indicate new clearing or land degradation.",
-                        location="Site-wide Assessment",
-                        severity="high" if area > 1.0 else "medium"
-                    ))
 
         # Bare Soil Expansion (BSI increase > 0.1) - Mining Pits
         bsi_diff = l_bsi - b_bsi
@@ -121,13 +112,6 @@ def run_analysis(
             area = _calculate_area(feat["geometry"])
             if area > 0.1:
                 zones.append(Zone("mining_expansion", area, feat["geometry"]))
-                alerts.append(Alert(
-                    alert_type="excavation_alert",
-                    title=f"New excavation surface detected ({area:.1f} ha)",
-                    description="Increase in Bare Soil Index suggests expansion of active mining pits or tailings zones.",
-                    location="Active Operations Zone",
-                    severity="medium"
-                ))
 
         # Water Change (NDWI delta > 0.2)
         ndwi_diff = l_ndwi - b_ndwi
@@ -137,17 +121,19 @@ def run_analysis(
             area = _calculate_area(feat["geometry"])
             if area > 0.05:
                 zones.append(Zone("water_accumulation", area, feat["geometry"]))
-                alerts.append(Alert(
-                    alert_type="water_warning",
-                    title="New water pooling detected",
-                    description="NDWI indicates potential new water accumulation. Check for leaks or seasonal flooding.",
-                    location="Drainage Area",
-                    severity="low"
-                ))
 
-        if not zones:
-            return [], []
+        # 5. Generate alerts using rule engine
+        from backend.alert_rules import AlertRuleEngine
+        
+        alert_engine = AlertRuleEngine()
+        context = {
+            "mine_area": mine_area,
+            "baseline_date": baseline_date,
+            "latest_date": latest_date
+        }
+        alerts = alert_engine.evaluate_zones(zones, context)
 
+        print(f"Generated {len(zones)} zones and {len(alerts)} alerts")
         return zones, alerts
 
     except Exception as e:

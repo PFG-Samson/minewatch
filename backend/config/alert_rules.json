@@ -1,0 +1,62 @@
+{
+    "version": "1.0",
+    "rules": {
+        "vegetation_loss": {
+            "enabled": true,
+            "description": "Triggers when NDVI drop indicates vegetation clearing or degradation",
+            "thresholds": {
+                "high": 1.0,
+                "medium": 0.5,
+                "low": 0.2
+            },
+            "min_area_ha": 0.2,
+            "messages": {
+                "high": "Significant vegetation loss detected ({area:.1f} ha)",
+                "medium": "Moderate vegetation loss detected ({area:.1f} ha)",
+                "low": "Minor vegetation loss detected ({area:.1f} ha)"
+            },
+            "description_template": "NDVI analysis shows a decline of {ndvi_drop:.2f} in vegetation index. This could indicate land clearing, degradation, or seasonal die-off."
+        },
+        "mining_expansion": {
+            "enabled": true,
+            "description": "Triggers when BSI increase indicates new excavation or exposed soil",
+            "thresholds": {
+                "medium": 0.1,
+                "low": 0.05
+            },
+            "min_area_ha": 0.05,
+            "messages": {
+                "medium": "New excavation surface detected ({area:.1f} ha)",
+                "low": "Small excavation expansion ({area:.1f} ha)"
+            },
+            "description_template": "Increase in Bare Soil Index suggests expansion of active mining pits, tailings zones, or haul roads."
+        },
+        "water_accumulation": {
+            "enabled": true,
+            "description": "Triggers when NDWI increase indicates new water bodies or flooding",
+            "thresholds": {
+                "medium": 0.2,
+                "low": 0.05
+            },
+            "min_area_ha": 0.05,
+            "messages": {
+                "medium": "Significant water accumulation detected ({area:.1f} ha)",
+                "low": "New water pooling detected ({area:.1f} ha)"
+            },
+            "description_template": "NDWI indicates potential new water accumulation. Check for pit flooding, tailings dam leaks, or seasonal pooling."
+        },
+        "boundary_breach": {
+            "enabled": true,
+            "description": "Triggers when change zones extend outside approved lease boundary",
+            "severity": "high",
+            "buffer_check": "outside",
+            "message": "Unauthorized activity detected outside lease boundary",
+            "description_template": "Change detection identified activity beyond the approved mining lease boundary. This requires immediate investigation for compliance."
+        }
+    },
+    "global_settings": {
+        "alert_cooldown_hours": 24,
+        "max_alerts_per_run": 50,
+        "min_confidence": 0.7
+    }
+}

@@ -159,3 +159,26 @@ export async function runStacIngestJob(payload: StacIngestJobDto = {}): Promise<
 export async function listImageryScenes(limit = 50): Promise<ImagerySceneDto[]> {
   return request<ImagerySceneDto[]>(`/imagery?limit=${encodeURIComponent(String(limit))}`);
 }
+
+// Simplified scene listing for dropdowns
+export async function listImageryScenesSimple(limit = 20): Promise<ImagerySceneDto[]> {
+  return request<ImagerySceneDto[]>(`/imagery/scenes?limit=${encodeURIComponent(String(limit))}`);
+}
+
+// Alert Rules API
+export type AlertRulesConfig = {
+  version?: string;
+  rules: Record<string, unknown>;
+  global_settings?: Record<string, unknown>;
+};
+
+export async function getAlertRules(): Promise<AlertRulesConfig> {
+  return request<AlertRulesConfig>("/alert-rules");
+}
+
+export async function updateAlertRules(config: { rules: Record<string, unknown>; global_settings?: Record<string, unknown> }): Promise<{ status: string; message: string }> {
+  return request<{ status: string; message: string }>("/alert-rules", {
+    method: "PUT",
+    body: JSON.stringify(config),
+  });
+}

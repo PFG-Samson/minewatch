@@ -5,6 +5,8 @@ MineWatch is a web application that helps teams monitor land-use and environment
 **Key Features:**
 
 - **Real Scientific Analysis Pipeline:** Authentic calculation of **NDVI** (Vegetation), **BSI** (Bare Soil), and **NDWI** (Water) from multi-spectral Sentinel-2 satellite imagery with change detection between acquisition dates.
+- **Intelligent Alert System:** Configurable rule-based alerts with severity levels (high/medium/low) based on area thresholds and change types.
+- **Scene Selection Controls:** Users can select specific baseline and latest scenes for analysis via UI dropdowns showing acquisition dates and cloud cover.
 - **Dedicated Settings Tab:** Full-screen project configuration for Site Name, Description, GeoJSON boundary upload, and Buffer zone.
 - **Automated Satellite Ingestion via STAC:** Metadata search and automated band download (B02-Blue, B03-Green, B04-Red, B08-NIR, B11-SWIR) from Microsoft Planetary Computer.
 - **Interactive Map:** Renders boundaries, buffer zones, and scientific change overlays; features reactive zoom to latest AOI.
@@ -78,6 +80,23 @@ The system performs real change detection by comparing satellite imagery from tw
 6. Generates alerts for significant changes (> 0.5 hectares)
 
 **Note:** If only one scene is available, the system will return empty results with a warning. Run STAC ingestion to download at least 2 scenes from different dates for meaningful change detection.
+
+## Alert Rules Configuration
+
+The system uses a configurable rule-based alert engine defined in `backend/config/alert_rules.json`:
+
+**Alert Types:**
+- **Vegetation Loss**: High (>1.0 ha), Medium (>0.5 ha), Low (>0.2 ha)
+- **Mining Expansion**: Medium (>0.1 ha), Low (>0.05 ha) 
+- **Water Accumulation**: Low (>0.05 ha)
+- **Boundary Breach**: High (any activity outside approved boundary)
+
+**API Endpoints:**
+- `GET /alert-rules` - Get current configuration
+- `PUT /alert-rules` - Update thresholds (admin only)
+
+**Customization:**
+Edit `backend/config/alert_rules.json` to adjust thresholds, enable/disable rules, or modify alert messages.
 
 ## Troubleshooting (Windows)
 

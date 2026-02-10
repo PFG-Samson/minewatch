@@ -857,5 +857,77 @@ def list_alerts(limit: int = 50) -> list[AlertOut]:
         conn.close()
 
 
+@app.get("/imagery/scenes")
+def list_imagery_scenes_simple(limit: int = 20) -> list[dict[str, Any]]:
+    """Simplified scene listing for UI dropdowns with essential metadata"""
+    conn = get_db()
+    try:
+        rows = conn.execute(
+            """
+            SELECT id, source, acquired_at, cloud_cover, uri, created_at
+            FROM imagery_scene
+            ORDER BY acquired_at DESC
+            LIMIT ?
+            """,
+            (limit,)
+        ).fetchall()
+
+        return [
+            {
+                "id": int(row["id"]),
+                "source": row["source"],
+                "acquired_at": row["acquired_at"],
+                "cloud_cover": float(row["cloud_cover"]) if row["cloud_cover"] is not None else None,
+                "uri": row["uri"],
+                "created_at": row["created_at"]
+            }
+            for row in rows
+        ]
+    finally:
+        conn.close()
+
+
+@app.get("/alert-rules")
+def get_alert_rules() -> dict[str, Any]:
+    """Get current alert rule configuration"""
+    from backend.alert_rules import AlertRuleEngine
+    
+    engine = AlertRuleEngine()
+    return engine.get_config()
+
+
+class AlertRulesUpdate(BaseModel):
+    """Model for updating alert rules configuration"""
+    rules: dict[str, Any]
+    global_settings: Optional[dict[str, Any]] = None
+
+
+@app.put("/alert-rules")
+def update_alert_rules(payload: AlertRulesUpdate) -> dict[str, str]:
+    """
+    Update alert rule configuration.
+    
+    This endpoint allows administrators to modify alert thresholds,
+    enable/disable specific rules, and adjust severity levels.
+    """
+    from backend.alert_rules import AlertRuleEngine
+    
+    engine = AlertRuleEngine()
+    
+    # Build new config
+    new_config = {
+        "version": "1.0",
+        "rules": payload.rules
+    }
+    
+    if payload.global_settings:
+        new_config["global_settings"] = payload.global_settings
+    
+    # Update and reload
+    engine.update_config(new_config)
+    
+    return {"status": "success", "message": "Alert rules updated successfully"}
+
+
 if __name__ == "__main__":
     uvicorn.run("backend.main:app", host="0.0.0.0", port=8000, reload=True)

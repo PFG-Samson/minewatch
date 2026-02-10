@@ -1,11 +1,18 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { TrendingUp, Activity, BarChart3, Info, Loader2 } from 'lucide-react';
+import { TrendingUp, Activity, BarChart3, Info, Loader2, Play, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useQuery } from '@tanstack/react-query';
-import { listAnalysisRuns, getAnalysisRun } from '@/lib/api';
+import { Button } from '@/components/ui/button';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { listAnalysisRuns, getAnalysisRun, listImageryScenesSimple, createAnalysisRun } from '@/lib/api';
+import { SceneSelector } from './SceneSelector';
+import { toast } from '@/hooks/use-toast';
 
 export function AnalysisView() {
-    const { data: latestRun, isLoading } = useQuery({
+    const [baselineSceneId, setBaselineSceneId] = useState<number | null>(null);
+    const [latestSceneId, setLatestSceneId] = useState<number | null>(null);
+
+    const { data: latestRun, isLoading, refetch: refetchLatestRun } = useQuery({
         queryKey: ['latestAnalysisRun'],
         queryFn: async () => {
             const runs = await listAnalysisRuns(1);
@@ -13,6 +20,64 @@ export function AnalysisView() {
             return getAnalysisRun(runs[0].id);
         }
     });
+
+    const { data: scenes = [], isLoading: scenesLoading } = useQuery({
+        queryKey: ['scenes', 'simple'],
+        queryFn: () => listImageryScenesSimple(20)
+    });
+
+    const analysisMutation = useMutation({
+        mutationFn: () => createAnalysisRun({
+            baseline_scene_id: baselineSceneId ?? undefined,
+            latest_scene_id: latestSceneId ?? undefined
+        }),
+        onSuccess: () => {
+            toast({
+                title: 'Analysis Started',
+                description: 'New change detection analysis is being processed.'
+            });
+            setBaselineSceneId(null);
+            setLatestSceneId(null);
+            void refetchLatestRun();
+        },
+        onError: (err) => {
+            toast({
+                title: 'Analysis Failed',
+                description: err instanceof Error ? err.message : 'Unable to start analysis.',
+                variant: 'destructive'
+            });
+        }
+    });
+
+    const getValidationError = (): string | null => {
+        if (!baselineSceneId || !latestSceneId) return null;
+
+        const baseline = scenes.find(s => s.id === baselineSceneId);
+        const latest = scenes.find(s => s.id === latestSceneId);
+
+        if (!baseline || !latest) return null;
+
+        if (baseline.id === latest.id) {
+            return 'Baseline and latest scenes must be different';
+        }
+
+        const baselineDate = new Date(baseline.acquired_at);
+        const latestDate = new Date(latest.acquired_at);
+
+        if (baselineDate >= latestDate) {
+            return 'Baseline scene must be acquired before latest scene';
+        }
+
+        const daysDiff = (latestDate.getTime() - baselineDate.getTime()) / (1000 * 60 * 60 * 24);
+        if (daysDiff < 7) {
+            return 'Warning: Scenes are less than 7 days apart - changes may be minimal';
+        }
+
+        return null;
+    };
+
+    const validationError = getValidationError();
+    const canRunAnalysis = baselineSceneId && latestSceneId && !validationError?.includes('must');
 
     if (isLoading) {
         return (
@@ -43,6 +108,66 @@ export function AnalysisView() {
                 <h2 className="text-2xl font-bold text-foreground">Change Analysis & Trends</h2>
                 <p className="text-muted-foreground">Statistical breakdown of spatial changes and environmental health indicators over time.</p>
             </div>
+
+            {/* Scene Selection Panel */}
+            <Card className="border-primary/20 bg-primary/5">
+                <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                        <Play className="w-4 h-4" />
+                        Configure New Analysis Run
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <SceneSelector
+                            label="Baseline Scene"
+                            value={baselineSceneId}
+                            onChange={setBaselineSceneId}
+                            scenes={scenes}
+                            disabled={scenesLoading}
+                            helperText="Select the earlier scene for comparison"
+                        />
+                        <SceneSelector
+                            label="Latest Scene"
+                            value={latestSceneId}
+                            onChange={setLatestSceneId}
+                            scenes={scenes}
+                            disabled={scenesLoading}
+                            helperText="Select the most recent scene"
+                        />
+                    </div>
+
+                    {validationError && (
+                        <div className="flex items-start gap-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-md">
+                            <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5" />
+                            <p className="text-sm text-amber-700 dark:text-amber-400">{validationError}</p>
+                        </div>
+                    )}
+
+                    <div className="flex items-center justify-between pt-2">
+                        <p className="text-xs text-muted-foreground">
+                            {scenes.length === 0 ? 'No scenes available. Run STAC ingestion first.' : `${scenes.length} scene(s) available`}
+                        </p>
+                        <Button
+                            onClick={() => analysisMutation.mutate()}
+                            disabled={!canRunAnalysis || analysisMutation.isPending}
+                            className="gap-2"
+                        >
+                            {analysisMutation.isPending ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    Processing...
+                                </>
+                            ) : (
+                                <>
+                                    <Play className="w-4 h-4" />
+                                    Run Analysis
+                                </>
+                            )}
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <Card className="lg:col-span-2">

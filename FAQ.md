@@ -75,6 +75,26 @@ A central reference for users and developers covering system operation, troubles
 
 After February 2026, the system no longer falls back to demo data - analysis either succeeds with real data or returns empty results/errors.
 
+### Q: How do I customize alert thresholds?
+**A:** Alert rules are configured in `backend/config/alert_rules.json`. You can:
+- Modify area thresholds for each alert type
+- Change severity levels (high/medium/low)
+- Enable/disable specific rules
+- Customize alert titles and descriptions
+
+After editing the file, restart the backend to apply changes. Alternatively, use the API:
+```bash
+GET http://localhost:8000/alert-rules        # View current config
+PUT http://localhost:8000/alert-rules        # Update config
+```
+
+### Q: What triggers each alert type?
+**A:**
+- **Vegetation Loss**: NDVI drop > 0.15 AND area > threshold (default: 0.2 ha minimum)
+- **Mining Expansion**: BSI increase > 0.1 AND area > threshold (default: 0.05 ha minimum)
+- **Water Accumulation**: NDWI increase > 0.2 AND area > threshold (default: 0.05 ha minimum)
+- **Boundary Breach**: Any zone extending outside approved boundary + buffer
+
 ---
 
 ## 💻 Developer Notes
