@@ -501,10 +501,11 @@ def create_analysis_run(payload: AnalysisRunCreate) -> AnalysisRunOut:
         for a in alerts:
             conn.execute(
                 """
-                INSERT INTO alert (run_id, alert_type, title, description, location, severity, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO alert (run_id, alert_type, title, description, location, severity, geometry_geojson, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
-                (run_id, a.alert_type, a.title, a.description, a.location, a.severity, now),
+                (run_id, a.alert_type, a.title, a.description, a.location, a.severity, 
+                 json.dumps(a.geometry) if a.geometry else None, now),
             )
 
         conn.commit()
@@ -832,7 +833,7 @@ def list_alerts(limit: int = 50) -> list[AlertOut]:
     try:
         rows = conn.execute(
             """
-            SELECT id, run_id, alert_type, title, description, location, severity, created_at
+            SELECT id, run_id, alert_type, title, description, location, severity, geometry_geojson, created_at
             FROM alert
             ORDER BY created_at DESC
             LIMIT ?
@@ -850,6 +851,7 @@ def list_alerts(limit: int = 50) -> list[AlertOut]:
                 location=r["location"],
                 severity=r["severity"],
                 created_at=r["created_at"],
+                geometry=json.loads(r["geometry_geojson"]) if r["geometry_geojson"] else None,
             )
             for r in rows
         ]

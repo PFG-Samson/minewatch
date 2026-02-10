@@ -31,6 +31,7 @@ class Alert:
     description: str
     location: str
     severity: str  # high, medium, low
+    geometry: dict | None = None  # GeoJSON geometry of the affected zone
 
 
 class AlertRule(ABC):
@@ -99,7 +100,8 @@ class VegetationLossRule(AlertRule):
             title=title,
             description=description,
             location="Site Assessment Zone",
-            severity=severity
+            severity=severity,
+            geometry=zone.geometry
         )
 
 
@@ -130,7 +132,8 @@ class MiningExpansionRule(AlertRule):
             title=title,
             description=description,
             location="Active Operations Zone",
-            severity=severity
+            severity=severity,
+            geometry=zone.geometry
         )
 
 
@@ -162,7 +165,8 @@ class WaterAccumulationRule(AlertRule):
             title=title,
             description=description,
             location="Drainage Area",
-            severity=severity
+            severity=severity,
+            geometry=zone.geometry
         )
 
 
@@ -210,7 +214,8 @@ class BoundaryBreachRule(AlertRule):
                     title=message,
                     description=desc_template,
                     location="Boundary Perimeter",
-                    severity=severity
+                    severity=severity,
+                    geometry=zone.geometry
                 )
         except Exception as e:
             print(f"Error checking boundary breach: {e}")

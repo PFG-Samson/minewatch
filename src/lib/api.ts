@@ -26,6 +26,7 @@ export type AlertDto = {
   location: string;
   severity: "high" | "medium" | "low" | string;
   created_at: string;
+  geometry?: Record<string, unknown> | null;
 };
 
 export type AnalysisRunCreateDto = {
