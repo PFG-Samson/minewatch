@@ -67,6 +67,18 @@ export type RunImageryDto = {
   latest: { url: string; bounds: [number, number, number, number] } | null;
 };
 
+export type AnalysisStatsDto = {
+  has_data: boolean;
+  vegetation_loss_ha: number;
+  vegetation_gain_ha: number;
+  mining_expansion_ha: number;
+  water_accumulation_ha: number;
+  total_change_ha: number;
+  last_updated: string | null;
+  baseline_date?: string | null;
+  latest_date?: string | null;
+};
+
 export type MineAreaUpsertDto = {
   name: string;
   description?: string;
@@ -81,6 +93,7 @@ export type MineAreaDto = {
   buffer_km: number;
   created_at: string;
   updated_at: string;
+  area_ha?: number;
 };
 
 export type ImagerySceneDto = {
@@ -114,6 +127,10 @@ export async function listAnalysisRuns(limit = 10): Promise<AnalysisRunDto[]> {
 
 export async function getRunImagery(runId: number): Promise<RunImageryDto> {
   return request<RunImageryDto>(`/analysis-runs/${encodeURIComponent(String(runId))}/imagery`);
+}
+
+export async function getLatestAnalysisStats(): Promise<AnalysisStatsDto> {
+  return request<AnalysisStatsDto>('/analysis-runs/latest/stats');
 }
 
 export async function getMineArea(): Promise<MineAreaDto> {

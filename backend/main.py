@@ -359,13 +359,25 @@ def get_mine_area() -> MineAreaOut:
         if row is None:
             raise HTTPException(status_code=404, detail="Mine area not configured")
 
+        boundary = json.loads(row["boundary_geojson"])
+        
+        # Calculate area in hectares
+        from shapely.geometry import shape
+        geom = shape(boundary)
+        # Area in square degrees, convert to hectares (approximate)
+        # 1 degree ≈ 111.32 km at equator
+        area_sq_deg = geom.area
+        area_sq_m = area_sq_deg * (111319.9 ** 2)  # Convert to square meters
+        area_ha = area_sq_m / 10000  # Convert to hectares
+
         return MineAreaOut(
             name=row["name"],
             description=row["description"],
-            boundary=json.loads(row["boundary_geojson"]),
+            boundary=boundary,
             buffer_km=float(row["buffer_km"]),
             created_at=row["created_at"],
             updated_at=row["updated_at"],
+            area_ha=area_ha,
         )
     finally:
         conn.close()
@@ -823,6 +835,69 @@ def list_analysis_runs(limit: int = 50) -> list[AnalysisRunOut]:
             )
             for r in rows
         ]
+    finally:
+        conn.close()
+
+
+@app.get("/analysis-runs/latest/stats")
+def get_latest_analysis_stats() -> dict[str, Any]:
+    """Get statistics from the most recent analysis run"""
+    conn = get_db()
+    try:
+        # Get latest run
+        run = conn.execute(
+            "SELECT id, created_at, baseline_date, latest_date FROM analysis_run ORDER BY created_at DESC LIMIT 1"
+        ).fetchone()
+        
+        if not run:
+            return {
+                "has_data": False,
+                "vegetation_loss_ha": 0,
+                "vegetation_gain_ha": 0,
+                "mining_expansion_ha": 0,
+                "water_accumulation_ha": 0,
+                "total_change_ha": 0,
+                "last_updated": None,
+            }
+        
+        run_id = run["id"]
+        
+        # Get zone totals
+        zones = conn.execute(
+            """
+            SELECT zone_type, SUM(area_ha) as total_area
+            FROM analysis_zone
+            WHERE run_id = ?
+            GROUP BY zone_type
+            """,
+            (run_id,)
+        ).fetchall()
+        
+        stats = {
+            "vegetation_loss": 0.0,
+            "vegetation_gain": 0.0,
+            "mining_expansion": 0.0,
+            "water_accumulation": 0.0,
+        }
+        
+        for zone in zones:
+            zone_type = zone["zone_type"]
+            if zone_type in stats:
+                stats[zone_type] = float(zone["total_area"])
+        
+        total_change = sum(stats.values())
+        
+        return {
+            "has_data": True,
+            "vegetation_loss_ha": stats["vegetation_loss"],
+            "vegetation_gain_ha": stats["vegetation_gain"],
+            "mining_expansion_ha": stats["mining_expansion"],
+            "water_accumulation_ha": stats["water_accumulation"],
+            "total_change_ha": total_change,
+            "last_updated": run["created_at"],
+            "baseline_date": run["baseline_date"],
+            "latest_date": run["latest_date"],
+        }
     finally:
         conn.close()
 

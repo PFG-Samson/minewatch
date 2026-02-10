@@ -21,7 +21,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
-import { createAnalysisRun, downloadAnalysisReport, getLatestImagery, getMineArea, listAlerts, runStacIngestJob, upsertMineArea } from '@/lib/api';
+import { createAnalysisRun, downloadAnalysisReport, getLatestImagery, getMineArea, listAlerts, runStacIngestJob, upsertMineArea, getLatestAnalysisStats } from '@/lib/api';
 import { ImageryView } from './ImageryView';
 import { AlertsView } from './AlertsView';
 import { AnalysisView } from './AnalysisView';
@@ -85,6 +85,13 @@ export function Dashboard() {
     queryKey: ['imagery', 'latest'],
     queryFn: () => getLatestImagery(),
     retry: false,
+  });
+
+  const statsQuery = useQuery({
+    queryKey: ['analysis', 'stats'],
+    queryFn: () => getLatestAnalysisStats(),
+    retry: false,
+    refetchInterval: 30000, // Refresh every 30s
   });
 
   const ingestMutation = useMutation({
@@ -220,28 +227,26 @@ export function Dashboard() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                   <StatCard
                     title="Monitored Area"
-                    value="2,450"
+                    value={mineAreaQuery.data?.area_ha?.toFixed(2) || "0"}
                     unit="hectares"
                     icon={<Layers3 className="w-5 h-5" />}
                     variant="info"
                     delay={0}
                   />
                   <StatCard
-                    title="Vegetation Coverage"
-                    value="68.4"
-                    unit="%"
-                    change={{ value: 2.3, type: 'decrease' }}
+                    title="Vegetation Loss"
+                    value={statsQuery.data?.vegetation_loss_ha?.toFixed(2) || "0"}
+                    unit="hectares"
                     icon={<Trees className="w-5 h-5" />}
-                    variant="vegetation"
+                    variant="alert"
                     delay={0.1}
                   />
                   <StatCard
-                    title="Disturbed Land"
-                    value="324"
+                    title="Vegetation Gain"
+                    value={statsQuery.data?.vegetation_gain_ha?.toFixed(2) || "0"}
                     unit="hectares"
-                    change={{ value: 5.1, type: 'increase' }}
-                    icon={<Layers3 className="w-5 h-5" />}
-                    variant="barren"
+                    icon={<Trees className="w-5 h-5" />}
+                    variant="vegetation"
                     delay={0.2}
                   />
                   <StatCard
@@ -471,34 +476,42 @@ export function Dashboard() {
                 <div className="space-y-4">
                   <div>
                     <div className="flex justify-between text-sm mb-1">
-                      <span className="text-muted-foreground">NDVI Score</span>
-                      <span className="font-medium text-foreground">0.42</span>
+                      <span className="text-muted-foreground">Vegetation Loss</span>
+                      <span className="font-medium text-foreground">
+                        {statsQuery.data?.vegetation_loss_ha?.toFixed(2) || '0.00'} ha
+                      </span>
                     </div>
                     <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                      <div className="h-full bg-vegetation rounded-full" style={{ width: '42%' }} />
+                      <div className="h-full bg-alert-zone rounded-full" style={{ width: `${Math.min((statsQuery.data?.vegetation_loss_ha || 0) * 20, 100)}%` }} />
                     </div>
                   </div>
                   <div>
                     <div className="flex justify-between text-sm mb-1">
-                      <span className="text-muted-foreground">Cloud Cover</span>
-                      <span className="font-medium text-foreground">12%</span>
+                      <span className="text-muted-foreground">Vegetation Gain</span>
+                      <span className="font-medium text-foreground">
+                        {statsQuery.data?.vegetation_gain_ha?.toFixed(2) || '0.00'} ha
+                      </span>
                     </div>
                     <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                      <div className="h-full bg-info rounded-full" style={{ width: '12%' }} />
+                      <div className="h-full bg-vegetation rounded-full" style={{ width: `${Math.min((statsQuery.data?.vegetation_gain_ha || 0) * 20, 100)}%` }} />
                     </div>
                   </div>
                   <div>
                     <div className="flex justify-between text-sm mb-1">
-                      <span className="text-muted-foreground">Data Freshness</span>
-                      <span className="font-medium text-foreground">98%</span>
+                      <span className="text-muted-foreground">Mining Expansion</span>
+                      <span className="font-medium text-foreground">
+                        {statsQuery.data?.mining_expansion_ha?.toFixed(2) || '0.00'} ha
+                      </span>
                     </div>
                     <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                      <div className="h-full bg-accent rounded-full" style={{ width: '98%' }} />
+                      <div className="h-full bg-barren rounded-full" style={{ width: `${Math.min((statsQuery.data?.mining_expansion_ha || 0) * 20, 100)}%` }} />
                     </div>
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground mt-4">
-                  Last updated: Jan 21, 2025 at 14:32 UTC
+                  {statsQuery.data?.last_updated
+                    ? `Last updated: ${new Date(statsQuery.data.last_updated).toLocaleString()}`
+                    : 'No analysis data available'}
                 </p>
               </motion.div>
 
