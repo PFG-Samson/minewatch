@@ -136,6 +136,19 @@ export function Dashboard() {
     },
   });
 
+  const clearAllMutation = useMutation({
+    mutationFn: () => clearAllAnalysis(),
+    onSuccess: () => {
+      toast({ title: 'Data cleared', description: 'All analysis runs, zones, and alerts have been deleted.' });
+      void alertsQuery.refetch();
+      void statsQuery.refetch();
+      setCurrentRunId(null);
+    },
+    onError: (err) => {
+      toast({ title: 'Clear failed', description: err instanceof Error ? err.message : 'Unable to clear data.' });
+    },
+  });
+
   const saveMineAreaMutation = useMutation({
     mutationFn: async () => {
       const parsed = JSON.parse(boundaryText || '{}');
