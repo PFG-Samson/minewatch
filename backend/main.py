@@ -292,6 +292,7 @@ class MineAreaOut(BaseModel):
     buffer_km: float
     created_at: str
     updated_at: str
+    area_ha: float = 0.0
 
 
 class AnalysisRunCreate(BaseModel):
@@ -1004,6 +1005,24 @@ def update_alert_rules(payload: AlertRulesUpdate) -> dict[str, str]:
     engine.update_config(new_config)
     
     return {"status": "success", "message": "Alert rules updated successfully"}
+
+
+@app.delete("/analysis-runs/clear-all")
+def clear_all_analysis() -> dict[str, str]:
+    """Delete all analysis runs, zones, and alerts"""
+    conn = get_db()
+    try:
+        # Delete in correct order due to foreign keys
+        conn.execute("DELETE FROM alert")
+        conn.execute("DELETE FROM analysis_zone")
+        conn.execute("DELETE FROM analysis_run")
+        conn.commit()
+        return {"status": "success", "message": "All analysis data cleared"}
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to clear data: {str(e)}")
+    finally:
+        conn.close()
 
 
 if __name__ == "__main__":

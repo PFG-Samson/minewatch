@@ -21,7 +21,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
-import { createAnalysisRun, downloadAnalysisReport, getLatestImagery, getMineArea, listAlerts, runStacIngestJob, upsertMineArea, getLatestAnalysisStats } from '@/lib/api';
+import { createAnalysisRun, downloadAnalysisReport, getLatestImagery, getMineArea, listAlerts, runStacIngestJob, upsertMineArea, getLatestAnalysisStats, clearAllAnalysis } from '@/lib/api';
 import { ImageryView } from './ImageryView';
 import { AlertsView } from './AlertsView';
 import { AnalysisView } from './AnalysisView';
@@ -177,6 +177,19 @@ export function Dashboard() {
   const showBoundary = layers.find(l => l.id === 'boundary')?.enabled ?? true;
 
   const alerts = alertsQuery.data ?? [];
+
+  // Load boundary from database on mount
+  useEffect(() => {
+    if (mineAreaQuery.data) {
+      setSiteName(mineAreaQuery.data.name || '');
+      setSiteDescription(mineAreaQuery.data.description || '');
+      setBufferKm(String(mineAreaQuery.data.buffer_km || 2));
+      if (mineAreaQuery.data.boundary) {
+        setBoundaryText(JSON.stringify(mineAreaQuery.data.boundary, null, 2));
+        setPreviewBoundary(mineAreaQuery.data.boundary);
+      }
+    }
+  }, [mineAreaQuery.data]);
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
@@ -435,6 +448,20 @@ export function Dashboard() {
                       disabled={saveMineAreaMutation.isPending}
                     >
                       {saveMineAreaMutation.isPending ? 'Saving...' : 'Save Configuration'}
+                    </Button>
+
+                    <Button
+                      size="lg"
+                      variant="destructive"
+                      className="w-full mt-4"
+                      onClick={() => {
+                        if (confirm('⚠️ WARNING: This will permanently delete ALL analysis runs, zones, alerts, and imagery from the database. Your mine area configuration will NOT be deleted. This action cannot be undone!\n\nAre you absolutely sure?')) {
+                          clearAllMutation.mutate();
+                        }
+                      }}
+                      disabled={clearAllMutation.isPending}
+                    >
+                      {clearAllMutation.isPending ? 'Clearing...' : '🗑️ Clear All Analysis Data'}
                     </Button>
                   </div>
 

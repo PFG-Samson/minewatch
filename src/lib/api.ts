@@ -183,6 +183,12 @@ export async function listImageryScenesSimple(limit = 20): Promise<ImagerySceneD
   return request<ImagerySceneDto[]>(`/imagery/scenes?limit=${encodeURIComponent(String(limit))}`);
 }
 
+export async function clearAllAnalysis(): Promise<{ status: string; message: string }> {
+  return request('/analysis-runs/clear-all', {
+    method: 'DELETE',
+  });
+}
+
 // Alert Rules API
 export type AlertRulesConfig = {
   version?: string;
