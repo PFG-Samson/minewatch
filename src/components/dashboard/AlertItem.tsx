@@ -11,6 +11,8 @@ interface AlertItemProps {
   timestamp: string;
   severity: 'high' | 'medium' | 'low';
   delay?: number;
+  geometry?: Record<string, unknown> | null;
+  onLocationClick?: () => void;
 }
 
 const severityStyles = {
@@ -40,14 +42,16 @@ const typeIcons = {
   threshold_exceeded: AlertTriangle,
 };
 
-export function AlertItem({ 
-  type, 
-  title, 
-  description, 
-  location, 
-  timestamp, 
+export function AlertItem({
+  type,
+  title,
+  description,
+  location,
+  timestamp,
   severity,
-  delay = 0 
+  delay = 0,
+  geometry,
+  onLocationClick
 }: AlertItemProps) {
   const styles = severityStyles[severity];
   const Icon = typeIcons[type];
@@ -92,6 +96,15 @@ export function AlertItem({
               {timestamp}
             </span>
           </div>
+          {geometry && onLocationClick && (
+            <button
+              onClick={onLocationClick}
+              className="mt-2 px-3 py-1.5 text-xs font-medium rounded-md bg-primary/10 hover:bg-primary/20 text-primary transition-colors flex items-center gap-1.5"
+            >
+              <MapPin className="w-3 h-3" />
+              View on Map
+            </button>
+          )}
         </div>
       </div>
     </motion.div>

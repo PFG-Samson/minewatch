@@ -17,6 +17,7 @@ interface MapViewProps {
   mineAreaBoundary?: Record<string, unknown> | null;
   previewBoundary?: Record<string, unknown> | null;
   bufferKm?: number | null;
+  highlightedGeometry?: Record<string, unknown> | null;
 }
 
 export function MapView({
@@ -29,6 +30,7 @@ export function MapView({
   mineAreaBoundary = null,
   previewBoundary = null,
   bufferKm = null,
+  highlightedGeometry = null,
 }: MapViewProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -43,6 +45,7 @@ export function MapView({
     zonesLayer?: L.GeoJSON;
     baselineImagery?: L.ImageOverlay;
     latestImagery?: L.ImageOverlay;
+    highlighted?: L.GeoJSON;
   }>({});
 
   useEffect(() => {
@@ -301,6 +304,42 @@ export function MapView({
 
     layersRef.current.zonesLayer = zonesLayer;
   }, [showChanges, showAlerts, zones]);
+
+  // Handle highlighted alert geometry
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    // Remove previous highlight
+    if (layersRef.current.highlighted) {
+      map.removeLayer(layersRef.current.highlighted);
+      layersRef.current.highlighted = undefined;
+    }
+
+    if (!highlightedGeometry) return;
+
+    try {
+      const highlightLayer = L.geoJSON(highlightedGeometry as any, {
+        style: {
+          color: '#ef4444', // Red border
+          weight: 3,
+          fillColor: '#ef4444',
+          fillOpacity: 0.3,
+          dashArray: '10, 5',
+        },
+      }).addTo(map);
+
+      layersRef.current.highlighted = highlightLayer;
+
+      // Zoom to highlighted geometry
+      const bounds = highlightLayer.getBounds();
+      if (bounds.isValid()) {
+        map.fitBounds(bounds.pad(0.3)); // Pad 30% for better visibility
+      }
+    } catch (e) {
+      console.error("Failed to render highlighted geometry", e);
+    }
+  }, [highlightedGeometry]);
 
   return (
     <div

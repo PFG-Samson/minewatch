@@ -63,6 +63,7 @@ export function AlertsView() {
                             timestamp={alert.created_at}
                             severity={alert.severity as any}
                             delay={index * 0.05}
+                            geometry={alert.geometry}
                         />
                     ))}
                 </div>

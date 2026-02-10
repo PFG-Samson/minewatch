@@ -45,6 +45,7 @@ export function Dashboard() {
   const [siteName, setSiteName] = useState<string>('');
   const [siteDescription, setSiteDescription] = useState<string>('');
   const [previewBoundary, setPreviewBoundary] = useState<Record<string, unknown> | null>(null);
+  const [selectedAlertGeometry, setSelectedAlertGeometry] = useState<Record<string, unknown> | null>(null);
 
   const alertsQuery = useQuery({
     queryKey: ['alerts'],
@@ -267,6 +268,7 @@ export function Dashboard() {
                     mineAreaBoundary={mineAreaQuery.data?.boundary ?? null}
                     previewBoundary={previewBoundary}
                     bufferKm={Number(bufferKm) || null}
+                    highlightedGeometry={activeNav === 'map' ? selectedAlertGeometry : null}
                   />
                 </motion.div>
 
@@ -294,6 +296,11 @@ export function Dashboard() {
                         timestamp={alert.created_at}
                         severity={alert.severity as any}
                         delay={0.5 + index * 0.1}
+                        geometry={alert.geometry}
+                        onLocationClick={() => {
+                          setSelectedAlertGeometry(alert.geometry || null);
+                          setActiveNav('map');
+                        }}
                       />
                     ))}
                   </div>
@@ -318,6 +325,7 @@ export function Dashboard() {
                     mineAreaBoundary={mineAreaQuery.data?.boundary ?? null}
                     previewBoundary={previewBoundary}
                     bufferKm={Number(bufferKm) || null}
+                    highlightedGeometry={selectedAlertGeometry}
                   />
                   <div className="absolute top-4 right-4 bg-background/80 backdrop-blur-sm p-3 rounded-lg border border-border z-[1000] w-64 shadow-lg">
                     <LayerControl layers={layers} onToggle={handleLayerToggle} />
