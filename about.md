@@ -43,10 +43,12 @@ MineWatch follows a simple, repeatable workflow:
 A user provides the mining lease boundary, a project name, and a description in the **Settings** tab. This defines where monitoring matters.
 
 ### 2) Bring in satellite observations
-MineWatch automatically finds recent multi-spectral imagery over that area using the STAC protocol. It downloads specific bands (Red, Green, Blue, NIR, SWIR) needed for deep analysis.
+MineWatch searches the Microsoft Planetary Computer catalog for Sentinel-2 imagery matching your area. It registers **metadata** for available scenes (date, cloud cover, footprint) so you can choose the best dates for analysis.
 
 ### 3) Compare imagery with Scientific Indices
-MineWatch uses three primary indices to detect change:
+When you run an analysis, MineWatch **automatically downloads** the specific bands (Blue, Green, Red, NIR, SWIR) needed for deep analysis.
+
+ It uses three primary indices to detect change:
 - **NDVI (Vegetation):** Detects land clearing and rehabilitation progress.
 - **BSI (Bare Soil):** Identifies new excavations, pits, and road construction.
 - **NDWI (Water):** Monitors tailings ponds and flooded mining pits.

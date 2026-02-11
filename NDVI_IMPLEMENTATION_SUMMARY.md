@@ -65,9 +65,9 @@ python -m backend.test_all_indices
 
 ⚠️ **Need Multiple Scenes**: The database currently has only 1 scene. For real change detection:  
 1. Go to **Satellite Imagery** tab
-2. Click **"Run STAC Ingest Job"** with different cloud cover settings or date ranges
-3. Wait for multiple scenes to download
-4. Then run **"Run New Analysis"** in Change Analysis tab
+2. Click **"Sync STAC"** or **"Ingest via STAC"** to find available scenes (metadata only)
+3. Wait for scenes to appear in the list
+4. Then run **"Run New Analysis"** - this will download the actual bands and process them
 
 ## What Works Now
 

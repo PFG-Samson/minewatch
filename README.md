@@ -41,45 +41,83 @@ MineWatch is a web application that helps teams monitor land-use and environment
 
 1. Open the [Dashboard](http://localhost:8080/dashboard).
 2. Go to the **Settings** tab.
-3. Paste or upload your boundary GeoJSON, set your buffer, and click **Save Configuration**.
-4. In the **Satellite Imagery** tab, click **Run STAC Ingest Job** to find latest scenes.
-5. In **Change Analysis**, click **Run New Analysis** to compare indices between dates.
-6. Check **Alerts** and click **Generate Report** to download the findings.
+3. Paste or upload your boundary GeoJSON (WGS84), set your buffer distance, enter site name/description, and click **Save Configuration**.
+4. Navigate to **Satellite Imagery** tab and click **Sync STAC** to search and register available Sentinel-2 scenes (metadata only).
+5. Select a **Baseline** and **Latest** scene, then click **Run Selected Analysis** to trigger change detection.
+   - *Alternatively*, the dashboard **auto-runs analysis on mount** using the 2 most recent scenes if available.
+6. View results on the **Dashboard** (stats cards), **Map** (color-coded zones), or **Alerts** tab.
+7. Click **"View on Map"** on any alert to see its exact location highlighted on the map.
+8. Click **Generate Report** to download a PDF summary of the analysis.
 
 ## Key API endpoints
 
 - `GET /health`
 - `GET /mine-area`, `PUT /mine-area`
-- `POST /jobs/ingest-stac` (STAC search + store scenes as `imagery_scene` rows)
+- `POST /jobs/ingest-stac` - Search STAC catalog and register scene metadata (does NOT download imagery)
 - `GET /imagery`, `GET /imagery/latest`, `POST /imagery`
-- `POST /analysis-runs`, `GET /analysis-runs/{run_id}`, `GET /analysis-runs/{run_id}/report`
-- `GET /alerts`
+- `POST /analysis-runs` - Downloads imagery bands, runs analysis, generates zones and alerts
+- `GET /analysis-runs/{run_id}`, `GET /analysis-runs/{run_id}/report`
+- `GET /alerts` - Returns alerts with geometry for map visualization
+- `GET /alert-rules`, `PUT /alert-rules` - Manage alert rule configuration
 
-## STAC ingestion notes
+## STAC Ingestion Workflow
 
-The STAC ingestion job queries the Planetary Computer STAC API:
+The STAC ingestion queries Microsoft Planetary Computer STAC API:
 
-- `https://planetarycomputer.microsoft.com/api/stac/v1/search`
+**What it does:**
+- Searches for Sentinel-2 L2A scenes within your mine boundary bounding box
+- Filters by cloud cover (≤20% by default)
+- Registers scene **metadata only** in the database:
+  - Scene ID (URI)
+  - Acquisition date/time
+  - Cloud cover percentage
+  - Footprint geometry (GeoJSON)
 
-It uses your saved mine boundary to derive a bounding box and searches Sentinel‑2 L2A items, storing:
+**What it does NOT do:**
+- Does NOT download actual imagery files (.tif bands)
+- Imagery is downloaded later during analysis runs
 
-- acquisition datetime
-- cloud cover (when available)
-- scene footprint geometry
-- scene identifier
+**Buttons:**
+- **"Ingest via STAC"** (Dashboard): Fetches up to 10 scenes
+- **"Sync STAC"** (Imagery tab): Fetches up to 20 scenes
+- **"Start First Ingestion"** (Imagery tab empty state): Fetches up to 20 scenes
 
-## NDVI Analysis
+## Analysis Workflow
 
-The system performs real change detection by comparing satellite imagery from two different acquisition dates:
+The system performs real change detection comparing two satellite scenes:
 
-1. Downloads required bands (B02, B03, B04, B08, B11) for baseline and latest scenes
-2. Clips imagery to mine boundary + buffer zone  
-3. Computes vegetation (NDVI), bare soil (BSI), and water (NDWI) indices
-4. Detects significant changes (vegetation loss > 0.15, soil exposure > 0.1, water accumulation > 0.2)
-5. Vectorizes change masks into GeoJSON polygons stored as analysis zones
-6. Generates alerts for significant changes (> 0.5 hectares)
+**Automatic Trigger:**
+- Dashboard automatically runs analysis on mount using 2 most recent scenes
 
-**Note:** If only one scene is available, the system will return empty results with a warning. Run STAC ingestion to download at least 2 scenes from different dates for meaningful change detection.
+**Manual Trigger:**
+1. User selects baseline and latest scenes
+2. Clicks "Run Analysis" button in Imagery or Analysis tab
+
+**Processing Steps:**
+1. **Download Bands** - Fetches required bands from Planetary Computer:
+   - B02 (Blue), B03 (Green), B04 (Red), B08 (NIR), B11 (SWIR)
+   - Saves to `backend/data/imagery/` as `.tif` files
+   - Caches locally (skips re-downloading existing files)
+
+2. **Clip to AOI** - Clips rasters to mine boundary + buffer zone
+
+3. **Calculate Indices**:
+   - **NDVI** (Vegetation): `(NIR - Red) / (NIR + Red)`
+   - **BSI** (Bare Soil): BSI calculation from Red, Blue, NIR, SWIR
+   - **NDWI** (Water): `(Green - NIR) / (Green + NIR)`
+
+4. **Detect Changes**:
+   - Vegetation loss: NDVI drop > 0.15
+   - Soil exposure: BSI increase > 0.1
+   - Water accumulation: NDWI increase > 0.2
+
+5. **Vectorize** - Converts change masks into GeoJSON polygon features
+
+6. **Generate Alerts** - Creates alerts with geometry using configurable rules
+
+7. **Save Results** - Stores zones, alerts (with geometry), and metadata in database
+
+**Note:** If only one scene is available, the system returns empty results. Run STAC ingestion to get at least 2 scenes from different dates.
 
 ## Alert Rules Configuration
 

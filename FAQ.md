@@ -21,28 +21,45 @@ A central reference for users and developers covering system operation, troubles
 
 ## 🛰️ Satellite Data (STAC)
 
+### Q: What does "Ingest via STAC" do?
+**A:** It searches the Microsoft Planetary Computer STAC catalog for Sentinel-2 satellite scenes over your mine area and **saves metadata only** to the database (scene ID, acquisition date, cloud cover, footprint geometry). It does NOT download the actual imagery files (.tif bands).
+
+### Q: When are imagery files downloaded?
+**A:** Imagery files are downloaded **during analysis runs**, not during STAC ingestion. When you create an analysis run, the system automatically downloads only the required bands (B02-Blue, B03-Green, B04-Red, B08-NIR, B11-SWIR) for the baseline and latest scenes. Files are cached locally in `backend/data/imagery/` to avoid re-downloading.
+
 ### Q: Why does "Ingest via STAC" fail?
 **A:** Common reasons include:
 1. **No Project Boundary:** You must save a project boundary in the **Settings** tab first.
 2. **Backend Offline:** If the Python server is down, search requests will fail.
 3. **Cloud Cover:** If you set a low cloud cover limit (e.g., < 10%), the system may find zero usable scenes for your location.
 
+### Q: What's the difference between the "Ingest via STAC", "Sync STAC", and "Start First Ingestion" buttons?
+**A:** They all call the same STAC ingestion endpoint with slightly different parameters:
+- **"Ingest via STAC"** (Dashboard sidebar): Fetches up to **10 scenes** with ≤20% cloud cover
+- **"Sync STAC"** (Imagery tab): Fetches up to **20 scenes** with ≤20% cloud cover
+- **"Start First Ingestion"** (Imagery empty state): Fetches up to **20 scenes** with ≤20% cloud cover
+
+### Q: Does the app automatically run analysis?
+**A:** **Yes!** When you first open the Dashboard, it automatically creates an analysis run using the 2 most recent scenes in the database (if at least 2 scenes exist). This auto-run happens once on mount. You can also manually trigger analysis by selecting scenes and clicking "Run Analysis" in the Imagery or Analysis tabs.
+
 ### Q: How many bands are downloaded?
-**A:** The system downloads **5 bands** per scene:
-- **Red, Green, Blue:** For the true-color map.
-- **NIR (Near-Infrared):** For vegetation health (NDVI).
-- **SWIR (Short-Wave Infrared):** For soil/excavation detection (BSI).
+**A:** The system downloads **5 bands** per scene during analysis:
+- **B02 (Blue), B03 (Green), B04 (Red):** For true-color visualization and BSI calculations
+- **B08 (NIR - Near-Infrared):** For vegetation health (NDVI) and water detection (NDWI)
+- **B11 (SWIR - Short-Wave Infrared):** For soil/excavation detection (BSI)
 
 ### Q: How long does downloading take?
 **A:** 
-- **Ingestion (Metadata):** 1-3 seconds.
-- **Syncing (Files):** ~2-5 minutes per scene depending on your connection. A typical "Change Analysis" compares two dates and takes **5-10 minutes**.
+- **STAC Ingestion (Metadata only):** 1-3 seconds
+- **Analysis Run (Downloads + Processing):** 3-10 minutes depending on connection speed and scene coverage
+  - Each .tif band is 20-50 MB, total ~200-500 MB for 2 scenes
+  - Cached bands are skipped on subsequent runs
 
 ### Q: Where is the data stored?
 **A:**
-- **Database:** `backend/minewatch.db` (settings, alerts, scene logs).
-- **Raw Tiff Files:** `backend/data/imagery/`.
-- **Map Overlays:** `backend/data/cache/` (optimized PNGs).
+- **Database:** `backend/data/minewatch.db` (settings, alerts, scene metadata, zones)
+- **Imagery Bands:** `backend/data/imagery/` (.tif files)
+- **Analysis Results:** Stored in database as GeoJSON
 
 ---
 
