@@ -8,9 +8,10 @@ const DEFAULT_CENTER: [number, number] = [0, 0];
 const DEFAULT_ZOOM = 2;
 
 interface MapViewProps {
-  showBaseline?: boolean;
-  showLatest?: boolean;
-  showChanges?: boolean;
+  showImagery?: boolean;
+  showVegetationLoss?: boolean;
+  showMiningExpansion?: boolean;
+  showWaterAccumulation?: boolean;
   showAlerts?: boolean;
   showBoundary?: boolean;
   runId?: number | null;
@@ -21,9 +22,10 @@ interface MapViewProps {
 }
 
 export function MapView({
-  showBaseline = true,
-  showLatest = true,
-  showChanges = true,
+  showImagery = true,
+  showVegetationLoss = true,
+  showMiningExpansion = true,
+  showWaterAccumulation = true,
   showAlerts = true,
   showBoundary = true,
   runId = null,
@@ -93,22 +95,22 @@ export function MapView({
       layersRef.current.latestImagery = undefined;
     }
 
-    if (imagery?.baseline && showBaseline) {
+    if (imagery?.baseline && showImagery) {
       const { url, bounds } = imagery.baseline;
       layersRef.current.baselineImagery = L.imageOverlay(`http://localhost:8000${url}`, [
         [bounds[0], bounds[1]],
         [bounds[2], bounds[3]]
-      ], { opacity: 1.0 }).addTo(map);
+      ], { opacity: 0.5 }).addTo(map);
     }
 
-    if (imagery?.latest && showLatest) {
+    if (imagery?.latest && showImagery) {
       const { url, bounds } = imagery.latest;
       layersRef.current.latestImagery = L.imageOverlay(`http://localhost:8000${url}`, [
         [bounds[0], bounds[1]],
         [bounds[2], bounds[3]]
       ], { opacity: 1.0 }).addTo(map);
     }
-  }, [imagery, showBaseline, showLatest]);
+  }, [imagery, showImagery]);
 
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
@@ -255,8 +257,11 @@ export function MapView({
       type: 'FeatureCollection',
       features: zones.features.filter((f) => {
         const zoneType = String(f.properties?.zone_type ?? '');
+        if (zoneType === 'vegetation_loss') return showVegetationLoss;
+        if (zoneType === 'mining_expansion') return showMiningExpansion;
+        if (zoneType === 'water_accumulation') return showWaterAccumulation;
         if (zoneType === 'alert') return showAlerts;
-        return showChanges;
+        return false;
       }),
     };
 
@@ -303,7 +308,7 @@ export function MapView({
     }).addTo(map);
 
     layersRef.current.zonesLayer = zonesLayer;
-  }, [showChanges, showAlerts, zones]);
+  }, [showVegetationLoss, showMiningExpansion, showWaterAccumulation, showAlerts, zones]);
 
   // Handle highlighted alert geometry
   useEffect(() => {

@@ -28,10 +28,11 @@ import { AnalysisView } from './AnalysisView';
 import { ReportsView } from './ReportsView';
 
 const initialLayers = [
-  { id: 'baseline', name: 'Baseline (Jan 2024)', description: 'Reference imagery', color: '#0d9488', enabled: true },
-  { id: 'latest', name: 'Latest (Jan 2025)', description: 'Most recent capture', color: '#3b82f6', enabled: true },
-  { id: 'changes', name: 'Change Detection', description: 'NDVI difference overlay', color: '#f97316', enabled: true },
-  { id: 'boundary', name: 'Lease Boundary', description: 'Mining permit area', color: '#22c55e', enabled: true },
+  { id: 'imagery', name: 'Satellite Imagery', description: 'RGB satellite overlays', color: '#3b82f6', enabled: true },
+  { id: 'vegetation_loss', name: 'Vegetation Loss', description: 'NDVI-based decline zones', color: '#c2410c', enabled: true },
+  { id: 'mining_expansion', name: 'Bare Soil Expansion', description: 'BSI-based mining zones', color: '#f97316', enabled: true },
+  { id: 'water_accumulation', name: 'Water Accumulation', description: 'NDWI-based water zones', color: '#2563eb', enabled: true },
+  { id: 'boundary', name: 'Mine Area Boundary', description: 'Study area boundary', color: '#22c55e', enabled: true },
   { id: 'alerts', name: 'Alert Zones', description: 'Flagged areas', color: '#ef4444', enabled: true },
 ];
 
@@ -177,7 +178,10 @@ export function Dashboard() {
     );
   };
 
-  const showChanges = layers.find(l => l.id === 'changes')?.enabled ?? true;
+  const showImagery = layers.find(l => l.id === 'imagery')?.enabled ?? true;
+  const showVegetationLoss = layers.find(l => l.id === 'vegetation_loss')?.enabled ?? true;
+  const showMiningExpansion = layers.find(l => l.id === 'mining_expansion')?.enabled ?? true;
+  const showWaterAccumulation = layers.find(l => l.id === 'water_accumulation')?.enabled ?? true;
   const showAlerts = layers.find(l => l.id === 'alerts')?.enabled ?? true;
   const showBoundary = layers.find(l => l.id === 'boundary')?.enabled ?? true;
 
@@ -284,7 +288,10 @@ export function Dashboard() {
                   className="map-container h-[500px] mb-6"
                 >
                   <MapView
-                    showChanges={showChanges}
+                    showImagery={showImagery}
+                    showVegetationLoss={showVegetationLoss}
+                    showMiningExpansion={showMiningExpansion}
+                    showWaterAccumulation={showWaterAccumulation}
                     showAlerts={showAlerts}
                     showBoundary={showBoundary}
                     runId={currentRunId}
@@ -341,7 +348,10 @@ export function Dashboard() {
                 </div>
                 <div className="flex-1 rounded-xl overflow-hidden border border-border shadow-inner relative">
                   <MapView
-                    showChanges={showChanges}
+                    showImagery={showImagery}
+                    showVegetationLoss={showVegetationLoss}
+                    showMiningExpansion={showMiningExpansion}
+                    showWaterAccumulation={showWaterAccumulation}
                     showAlerts={showAlerts}
                     showBoundary={showBoundary}
                     runId={currentRunId}
@@ -477,7 +487,10 @@ export function Dashboard() {
                       </CardHeader>
                       <CardContent className="h-[400px] p-0 overflow-hidden rounded-b-xl border-t">
                         <MapView
-                          showChanges={false}
+                          showImagery={false}
+                          showVegetationLoss={false}
+                          showMiningExpansion={false}
+                          showWaterAccumulation={false}
                           showAlerts={false}
                           showBoundary={true}
                           mineAreaBoundary={mineAreaQuery.data?.boundary ?? null}
