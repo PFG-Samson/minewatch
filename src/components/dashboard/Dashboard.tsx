@@ -105,14 +105,6 @@ export function Dashboard() {
     },
   });
 
-  useEffect(() => {
-    if (!mineAreaQuery.data) return;
-    setBufferKm(String(mineAreaQuery.data.buffer_km));
-    setBoundaryText(JSON.stringify(mineAreaQuery.data.boundary, null, 2));
-    setSiteName(mineAreaQuery.data.name);
-    setSiteDescription(mineAreaQuery.data.description || '');
-  }, [mineAreaQuery.data]);
-
   // Effect to parse boundary text for on-the-fly preview
   useEffect(() => {
     if (!boundaryText) {

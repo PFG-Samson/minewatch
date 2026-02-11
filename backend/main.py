@@ -364,7 +364,22 @@ def get_mine_area() -> MineAreaOut:
         
         # Calculate area in hectares
         from shapely.geometry import shape
-        geom = shape(boundary)
+        
+        # Handle both FeatureCollection and direct geometry
+        if boundary.get("type") == "FeatureCollection":
+            # Extract the first feature's geometry
+            if boundary.get("features") and len(boundary["features"]) > 0:
+                geom_data = boundary["features"][0]["geometry"]
+            else:
+                raise HTTPException(status_code=400, detail="FeatureCollection has no features")
+        elif boundary.get("type") == "Feature":
+            # Extract geometry from Feature
+            geom_data = boundary["geometry"]
+        else:
+            # Direct geometry (Polygon, MultiPolygon, etc.)
+            geom_data = boundary
+        
+        geom = shape(geom_data)
         # Area in square degrees, convert to hectares (approximate)
         # 1 degree ≈ 111.32 km at equator
         area_sq_deg = geom.area
