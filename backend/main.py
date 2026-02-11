@@ -150,11 +150,19 @@ def init_db() -> None:
                 description TEXT NOT NULL,
                 location TEXT NOT NULL,
                 severity TEXT NOT NULL,
+                geometry_geojson TEXT,
                 created_at TEXT NOT NULL,
                 FOREIGN KEY (run_id) REFERENCES analysis_run(id)
             )
             """
         )
+
+        # Migration: Add geometry_geojson column if it doesn't exist
+        alert_cols = {
+            r["name"] for r in conn.execute("PRAGMA table_info(alert)").fetchall()
+        }
+        if "geometry_geojson" not in alert_cols:
+            conn.execute("ALTER TABLE alert ADD COLUMN geometry_geojson TEXT")
 
         conn.commit()
     finally:
@@ -344,6 +352,7 @@ class AlertOut(BaseModel):
     description: str
     location: str
     severity: str
+    geometry: Optional[dict[str, Any]] = None
     created_at: str
 
 
@@ -532,7 +541,7 @@ def create_analysis_run(payload: AnalysisRunCreate) -> AnalysisRunOut:
                 INSERT INTO alert (run_id, alert_type, title, description, location, severity, geometry_geojson, created_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
-                (run_id, a.alert_type, a.title, a.description, a.location, a.severity, 
+                (run_id, a.alert_type, a.title, a.description, a.location, a.severity,
                  json.dumps(a.geometry) if a.geometry else None, now),
             )
 
