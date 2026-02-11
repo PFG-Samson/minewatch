@@ -1024,15 +1024,37 @@ def update_alert_rules(payload: AlertRulesUpdate) -> dict[str, str]:
 
 @app.delete("/analysis-runs/clear-all")
 def clear_all_analysis() -> dict[str, str]:
-    """Delete all analysis runs, zones, and alerts"""
+    """Delete all analysis runs, zones, alerts, AND imagery"""
     conn = get_db()
     try:
-        # Delete in correct order due to foreign keys
+        # 1. Delete database records in correct order
         conn.execute("DELETE FROM alert")
         conn.execute("DELETE FROM analysis_zone")
         conn.execute("DELETE FROM analysis_run")
+        conn.execute("DELETE FROM imagery_scene")
         conn.commit()
-        return {"status": "success", "message": "All analysis data cleared"}
+
+        # 2. Delete physical files (Imagery Bands)
+        # Defined in backend/utils/stac_downloader.py
+        imagery_dir = Path(__file__).parent / "data" / "imagery"
+        if imagery_dir.exists():
+            for file in imagery_dir.glob("*"):
+                if file.is_file():
+                    try:
+                        file.unlink()
+                    except Exception as e:
+                        print(f"Failed to delete {file}: {e}")
+
+        # 3. Delete physical files (Cache/Previews)
+        if CACHE_DIR.exists():
+            for file in CACHE_DIR.glob("*"):
+                if file.is_file():
+                    try:
+                        file.unlink()
+                    except Exception as e:
+                        print(f"Failed to delete {file}: {e}")
+
+        return {"status": "success", "message": "All analysis data and imagery cleared"}
     except Exception as e:
         conn.rollback()
         raise HTTPException(status_code=500, detail=f"Failed to clear data: {str(e)}")
