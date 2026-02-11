@@ -10,19 +10,7 @@ from backend.utils.spatial import (
     clip_raster_to_geometry, vectorize_mask
 )
 
-@dataclass(frozen=True)
-class Zone:
-    zone_type: str
-    area_ha: float
-    geometry: dict[str, Any]
-
-@dataclass(frozen=True)
-class Alert:
-    alert_type: str
-    title: str
-    description: str
-    location: str
-    severity: str
+from backend.alert_rules import Alert, Zone
 
 @dataclass(frozen=True)
 class ImageryScene:
@@ -40,9 +28,10 @@ def run_analysis(
     baseline_scene: Optional[ImageryScene] = None,
     latest_scene: Optional[ImageryScene] = None,
 ) -> tuple[list[Zone], list[Alert]]:
-    # Fallback/Demo data if no real scenes provided
+    # Return empty results if no real scenes provided
     if baseline_scene is None or latest_scene is None or mine_area is None:
-        return _get_demo_results()
+        print("Insufficient data for analysis - returning empty results")
+        return [], []
 
     try:
         # 1. Prepare required bands
@@ -138,7 +127,8 @@ def run_analysis(
 
     except Exception as e:
         print(f"Error in scientific pipeline: {e}")
-        return _get_demo_results()
+        # Return empty lists instead of demo data to prevent mock data polluting the dashboard
+        return [], []
 
 def _calculate_area(geometry: dict) -> float:
     """Estimates area in hectares from GeoJSON geometry."""
@@ -158,46 +148,3 @@ def _calculate_area(geometry: dict) -> float:
         print(f"Area calculation error: {e}")
         # Very rough fallback
         return 0.0
-
-def _get_demo_results() -> tuple[list[Zone], list[Alert]]:
-    """Returns the hardcoded demo outputs for fallback/seeding."""
-    zones = [
-        Zone(
-            zone_type="vegetation_loss",
-            area_ha=1.5,
-            geometry={
-                "type": "Polygon",
-                "coordinates": [
-                    [[7.491, 9.137], [7.493, 9.138], [7.494, 9.136], [7.492, 9.135], [7.491, 9.137]]
-                ],
-            },
-        ),
-        Zone(
-            zone_type="vegetation_gain",
-            area_ha=0.8,
-            geometry={
-                "type": "Polygon",
-                "coordinates": [
-                    [[7.496, 9.134], [7.498, 9.135], [7.497, 9.133], [7.495, 9.132], [7.496, 9.134]]
-                ],
-            },
-        ),
-    ]
-
-    alerts = [
-        Alert(
-            alert_type="vegetation_loss",
-            title="Vegetation loss detected in operational zone",
-            description="NDVI analysis shows decline in vegetation cover on the site's western ridge.",
-            location="West Ridge Area",
-            severity="high",
-        ),
-        Alert(
-            alert_type="boundary_breach",
-            title="Unauthorized access detected",
-            description="Movement patterns suggest potential trespassing in restricted sectors.",
-            location="Restricted Ops Zone",
-            severity="medium",
-        ),
-    ]
-    return zones, alerts
