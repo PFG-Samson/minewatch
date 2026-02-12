@@ -61,21 +61,23 @@ def run_analysis(
 
         # 2. Process Baseline
         b_red, transform, b_crs = clip_raster_to_geometry(baseline_paths["B04"], geometry)
-        b_nir, _, _ = clip_raster_to_geometry(baseline_paths["B08"], geometry)
-        b_green, _, _ = clip_raster_to_geometry(baseline_paths["B03"], geometry)
-        b_blue, _, _ = clip_raster_to_geometry(baseline_paths["B02"], geometry)
-        b_swir, _, _ = clip_raster_to_geometry(baseline_paths["B11"], geometry)
+        target_shape = b_red.shape
+        
+        b_nir, _, _ = clip_raster_to_geometry(baseline_paths["B08"], geometry, target_shape, transform)
+        b_green, _, _ = clip_raster_to_geometry(baseline_paths["B03"], geometry, target_shape, transform)
+        b_blue, _, _ = clip_raster_to_geometry(baseline_paths["B02"], geometry, target_shape, transform)
+        b_swir, _, _ = clip_raster_to_geometry(baseline_paths["B11"], geometry, target_shape, transform)
 
         b_ndvi = calculate_ndvi(b_red, b_nir)
         b_ndwi = calculate_ndwi(b_green, b_nir)
         b_bsi = calculate_bsi(b_red, b_blue, b_nir, b_swir)
 
         # 3. Process Latest
-        l_red, _, _ = clip_raster_to_geometry(latest_paths["B04"], geometry)
-        l_nir, _, _ = clip_raster_to_geometry(latest_paths["B08"], geometry)
-        l_green, _, _ = clip_raster_to_geometry(latest_paths["B03"], geometry)
-        l_blue, _, _ = clip_raster_to_geometry(latest_paths["B02"], geometry)
-        l_swir, _, _ = clip_raster_to_geometry(latest_paths["B11"], geometry)
+        l_red, _, _ = clip_raster_to_geometry(latest_paths["B04"], geometry, target_shape, transform)
+        l_nir, _, _ = clip_raster_to_geometry(latest_paths["B08"], geometry, target_shape, transform)
+        l_green, _, _ = clip_raster_to_geometry(latest_paths["B03"], geometry, target_shape, transform)
+        l_blue, _, _ = clip_raster_to_geometry(latest_paths["B02"], geometry, target_shape, transform)
+        l_swir, _, _ = clip_raster_to_geometry(latest_paths["B11"], geometry, target_shape, transform)
 
         l_ndvi = calculate_ndvi(l_red, l_nir)
         l_ndwi = calculate_ndwi(l_green, l_nir)

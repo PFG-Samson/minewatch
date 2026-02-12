@@ -1,10 +1,10 @@
 import { motion } from 'framer-motion';
-import { AlertTriangle, TrendingDown, MapPin, Clock } from 'lucide-react';
+import { AlertTriangle, TrendingDown, MapPin, Clock, Pickaxe, Droplets } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface AlertItemProps {
   id: string;
-  type: 'vegetation_loss' | 'boundary_breach' | 'threshold_exceeded';
+  type: 'vegetation_loss' | 'boundary_breach' | 'threshold_exceeded' | 'mining_expansion' | 'water_accumulation';
   title: string;
   description: string;
   location: string;
@@ -40,6 +40,8 @@ const typeIcons = {
   vegetation_loss: TrendingDown,
   boundary_breach: MapPin,
   threshold_exceeded: AlertTriangle,
+  mining_expansion: Pickaxe,
+  water_accumulation: Droplets,
 };
 
 export function AlertItem({
@@ -54,7 +56,7 @@ export function AlertItem({
   onLocationClick
 }: AlertItemProps) {
   const styles = severityStyles[severity];
-  const Icon = typeIcons[type];
+  const Icon = typeIcons[type] || AlertTriangle;
 
   return (
     <motion.div

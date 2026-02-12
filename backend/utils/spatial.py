@@ -4,7 +4,7 @@ from rasterio.mask import mask
 from rasterio.features import shapes
 from rasterio.warp import transform_geom, transform_bounds
 from shapely.geometry import shape, mapping
-from typing import Any, Tuple, List
+from typing import Any, Tuple, List, Optional
 
 def calculate_ndvi(red_band: np.ndarray, nir_band: np.ndarray) -> np.ndarray:
     """Calculates Normalized Difference Vegetation Index (NDVI)."""
@@ -92,8 +92,19 @@ def _extract_geometry(geojson_input: dict) -> dict:
     raise ValueError(f"Unsupported GeoJSON type: {geom_type}")
 
 
-def clip_raster_to_geometry(raster_path: str, geojson_geometry: dict) -> Tuple[np.ndarray, Any, Any]:
-    """Clips a raster file to the provided GeoJSON geometry, handling CRS transformation."""
+def clip_raster_to_geometry(
+    raster_path: str, 
+    geojson_geometry: dict, 
+    target_shape: Optional[Tuple[int, int]] = None,
+    target_transform: Optional[Any] = None
+) -> Tuple[np.ndarray, Any, Any]:
+    """
+    Clips a raster file to the provided GeoJSON geometry, handling CRS transformation.
+    If target_shape and target_transform are provided, the output is resampled to match.
+    """
+    from rasterio.enums import Resampling
+    from rasterio.warp import reproject
+    
     # Extract geometry from various GeoJSON formats
     geometry = _extract_geometry(geojson_geometry)
     
@@ -101,8 +112,29 @@ def clip_raster_to_geometry(raster_path: str, geojson_geometry: dict) -> Tuple[n
         # Warp GeoJSON geometry to the raster's native CRS (usually UTM)
         warped_geom = transform_geom('EPSG:4326', src.crs, geometry)
         geoms = [shape(warped_geom)]
+        
+        # Initial mask and crop
         out_image, out_transform = mask(src, geoms, crop=True)
-        return out_image[0], out_transform, src.crs
+        out_band = out_image[0]
+        
+        # If no target specified, return original clipped data
+        if target_shape is None or target_transform is None:
+            return out_band, out_transform, src.crs
+            
+        # Perform resampling to match target grid
+        resampled_band = np.zeros(target_shape, dtype=out_band.dtype)
+        
+        reproject(
+            source=out_band,
+            destination=resampled_band,
+            src_transform=out_transform,
+            src_crs=src.crs,
+            dst_transform=target_transform,
+            dst_crs=src.crs,
+            resampling=Resampling.bilinear
+        )
+        
+        return resampled_band, target_transform, src.crs
 
 def get_raster_bounds_4326(raster_path: str) -> List[float]:
     """Returns [min_lat, min_lon, max_lat, max_lon] in WGS84 (EPSG:4326)."""
