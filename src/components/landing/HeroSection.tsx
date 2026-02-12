@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 
 const features = [
   'Automated satellite imagery ingestion',
-  'NDVI-based vegetation monitoring',
+  'Multi-spectral Monitoring (NDVI, BSI, NDWI)',
   'Real-time change detection alerts',
   'Compliance-ready PDF reports',
 ];
@@ -19,7 +19,7 @@ export function HeroSection({ onGetStarted }: HeroSectionProps) {
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden">
         <motion.div
-          animate={{ 
+          animate={{
             scale: [1, 1.2, 1],
             opacity: [0.1, 0.15, 0.1],
           }}
@@ -27,7 +27,7 @@ export function HeroSection({ onGetStarted }: HeroSectionProps) {
           className="absolute top-1/4 -left-20 w-96 h-96 bg-accent/20 rounded-full blur-3xl"
         />
         <motion.div
-          animate={{ 
+          animate={{
             scale: [1.2, 1, 1.2],
             opacity: [0.08, 0.12, 0.08],
           }}
@@ -35,7 +35,7 @@ export function HeroSection({ onGetStarted }: HeroSectionProps) {
           className="absolute bottom-1/4 -right-20 w-[500px] h-[500px] bg-info/10 rounded-full blur-3xl"
         />
         {/* Grid pattern */}
-        <div 
+        <div
           className="absolute inset-0 opacity-[0.03]"
           style={{
             backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',
@@ -81,8 +81,8 @@ export function HeroSection({ onGetStarted }: HeroSectionProps) {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="text-lg sm:text-xl text-white/70 max-w-2xl mx-auto mb-8"
           >
-            Monitor land disturbance, track vegetation recovery, and generate compliance 
-            reports automatically using satellite imagery and GIS analysis.
+            Monitor land disturbance, soil expansion, and water accumulation
+            automatically using multi-spectral satellite imagery and GIS analysis.
           </motion.p>
 
           {/* Feature list */}
@@ -93,7 +93,7 @@ export function HeroSection({ onGetStarted }: HeroSectionProps) {
             className="flex flex-wrap justify-center gap-x-6 gap-y-3 mb-10"
           >
             {features.map((feature, index) => (
-              <div 
+              <div
                 key={index}
                 className="flex items-center gap-2 text-sm text-white/80"
               >
@@ -110,18 +110,18 @@ export function HeroSection({ onGetStarted }: HeroSectionProps) {
             transition={{ duration: 0.6, delay: 0.4 }}
             className="flex flex-col sm:flex-row items-center justify-center gap-4"
           >
-            <Button 
+            <Button
               onClick={onGetStarted}
               size="lg"
               className="bg-accent text-accent-foreground hover:bg-accent/90 shadow-lg shadow-accent/25 px-8 gap-2"
             >
-              View Live Demo
+              Get Started
               <ArrowRight className="w-4 h-4" />
             </Button>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               size="lg"
-              className="border-white/30 text-white hover:bg-white/10 hover:text-white px-8"
+              className="border-white/30 text-black hover:bg-white/10 hover:text-white px-8"
             >
               Learn More
             </Button>
@@ -138,10 +138,10 @@ export function HeroSection({ onGetStarted }: HeroSectionProps) {
           {[
             { value: '10m', label: 'Resolution' },
             { value: '24/7', label: 'Monitoring' },
-            { value: '< 1hr', label: 'Alert Time' },
+            { value: 'Auto', label: 'Alerts' },
             { value: '100%', label: 'Automated' },
           ].map((stat, index) => (
-            <div 
+            <div
               key={index}
               className="text-center p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10"
             >

@@ -1,10 +1,10 @@
 import { motion } from 'framer-motion';
-import { 
-  Satellite, 
-  BarChart3, 
-  Bell, 
-  FileText, 
-  Map, 
+import {
+  Satellite,
+  BarChart3,
+  Bell,
+  FileText,
+  Map,
   Shield,
   Zap,
   Cloud
@@ -14,13 +14,13 @@ const features = [
   {
     icon: Satellite,
     title: 'Satellite Data Ingestion',
-    description: 'Automated fetching of Sentinel-2 and Landsat imagery. Cloud-free composites generated without manual intervention.',
+    description: 'Automated fetching of Sentinel-2 imagery. Cloud-free composites generated without manual intervention.',
     gradient: 'from-info to-accent',
   },
   {
     icon: BarChart3,
-    title: 'NDVI Analysis',
-    description: 'Track vegetation health over time with normalized difference vegetation index calculations and trend analysis.',
+    title: 'Multi-Spectral Analysis',
+    description: 'Track vegetation health (NDVI), monitor bare soil expansion (BSI), and detect water accumulation (NDWI) with automated trend analysis.',
     gradient: 'from-vegetation to-accent',
   },
   {
@@ -32,7 +32,7 @@ const features = [
   {
     icon: Bell,
     title: 'Smart Alerts',
-    description: 'Rule-based notifications for vegetation loss, boundary breaches, or threshold exceedances. Email and dashboard alerts.',
+    description: 'Rule-based notifications for vegetation loss, boundary breaches, or threshold exceedances. Dashboard alerts.',
     gradient: 'from-warning to-alert-zone',
   },
   {
@@ -68,7 +68,7 @@ export function FeaturesSection() {
             Everything You Need for Environmental Compliance
           </h2>
           <p className="text-lg text-muted-foreground">
-            Replace manual GIS analysis with continuous automated monitoring. 
+            Replace manual GIS analysis with continuous automated monitoring.
             From satellite to report, fully hands-off.
           </p>
         </motion.div>
@@ -92,7 +92,7 @@ export function FeaturesSection() {
                     <Icon className="w-5 h-5 text-accent" />
                   </div>
                 </div>
-                
+
                 {/* Content */}
                 <h3 className="text-lg font-semibold text-foreground mb-2 group-hover:text-accent transition-colors">
                   {feature.title}
@@ -122,9 +122,9 @@ export function FeaturesSection() {
                 <Zap className="w-7 h-7" />
               </div>
               <div>
-                <h3 className="text-xl font-semibold">Free Satellite Data</h3>
+                <h3 className="text-xl font-semibold"> Satellite Data</h3>
                 <p className="text-primary-foreground/70">
-                  Uses Sentinel-2 and Landsat — no expensive data subscriptions required.
+                  Uses Sentinel-2 Imagery
                 </p>
               </div>
             </div>

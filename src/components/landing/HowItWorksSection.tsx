@@ -6,7 +6,7 @@ const steps = [
     number: '01',
     icon: Upload,
     title: 'Define Your Area',
-    description: 'Upload or draw your mining lease boundary and buffer zones. Store as GeoJSON for precise monitoring.',
+    description: 'Upload your mining lease boundary or paste coordinates. Store as GeoJSON for precise monitoring.',
   },
   {
     number: '02',
@@ -18,7 +18,7 @@ const steps = [
     number: '03',
     icon: BarChart2,
     title: 'Change Detection',
-    description: 'NDVI analysis compares baseline to current state. Pixel-level vegetation and land cover changes identified.',
+    description: 'Multi-spectral analysis (NDVI, BSI, NDWI) compares baseline to current state to identify land cover changes.',
   },
   {
     number: '04',
@@ -53,7 +53,7 @@ export function HowItWorksSection() {
             From Satellite to Report in Five Steps
           </h2>
           <p className="text-lg text-muted-foreground">
-            Everything flows automatically. Define your area once, then the system 
+            Everything flows automatically. Define your area once, then the system
             handles imagery, analysis, alerts, and reporting.
           </p>
         </motion.div>
@@ -62,7 +62,7 @@ export function HowItWorksSection() {
         <div className="relative">
           {/* Connection line */}
           <div className="hidden lg:block absolute top-1/2 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-border to-transparent -translate-y-1/2" />
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
             {steps.map((step, index) => {
               const Icon = step.icon;
@@ -81,12 +81,12 @@ export function HowItWorksSection() {
                     <span className="absolute -top-3 -right-2 w-8 h-8 rounded-full bg-accent text-accent-foreground text-xs font-bold flex items-center justify-center">
                       {step.number}
                     </span>
-                    
+
                     {/* Icon */}
                     <div className="w-14 h-14 rounded-xl bg-accent/10 flex items-center justify-center mb-4 group-hover:bg-accent/20 transition-colors">
                       <Icon className="w-7 h-7 text-accent" />
                     </div>
-                    
+
                     {/* Content */}
                     <h3 className="text-base font-semibold text-foreground mb-2">
                       {step.title}
@@ -95,7 +95,7 @@ export function HowItWorksSection() {
                       {step.description}
                     </p>
                   </div>
-                  
+
                   {/* Arrow connector (except last) */}
                   {index < steps.length - 1 && (
                     <div className="hidden lg:block absolute top-1/2 -right-3 transform -translate-y-1/2 z-20">

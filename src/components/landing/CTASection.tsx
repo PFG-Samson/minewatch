@@ -43,13 +43,13 @@ export function CTASection({ onGetStarted }: CTASectionProps) {
                 size="lg"
                 className="bg-white text-primary hover:bg-white/90 shadow-lg px-8 gap-2"
               >
-                Start Free Trial
+                Get Started
                 <ArrowRight className="w-4 h-4" />
               </Button>
               <Button 
                 variant="outline" 
                 size="lg"
-                className="border-white/30 text-white hover:bg-white/10 hover:text-white px-8"
+                className="border-white/30 text-black hover:bg-white/10 hover:text-white px-8"
               >
                 Schedule Demo
               </Button>

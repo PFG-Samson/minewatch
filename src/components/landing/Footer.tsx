@@ -2,10 +2,10 @@ import { motion } from 'framer-motion';
 import { Mountain, Linkedin, Twitter, Mail } from 'lucide-react';
 
 const footerLinks = {
-  Product: ['Features', 'Pricing', 'Case Studies', 'Documentation'],
-  Company: ['About', 'Careers', 'Contact', 'Partners'],
-  Resources: ['Blog', 'Webinars', 'API Reference', 'Support'],
-  Legal: ['Privacy Policy', 'Terms of Service', 'Security', 'Compliance'],
+  Product: ['Features', 'Documentation'],
+  Company: ['About', 'Contact'],
+  Resources: ['Support'],
+  Legal: ['Privacy Policy', 'Terms of Service'],
 };
 
 export function Footer() {
@@ -22,7 +22,7 @@ export function Footer() {
               <span className="font-semibold text-xl">MineWatch</span>
             </div>
             <p className="text-primary-foreground/60 text-sm leading-relaxed mb-6 max-w-xs">
-              Automated environmental change detection for mining operations. 
+              Automated environmental change detection for mining operations.
               Satellite-powered compliance monitoring.
             </p>
             <div className="flex gap-4">
@@ -45,8 +45,8 @@ export function Footer() {
               <ul className="space-y-3">
                 {links.map((link) => (
                   <li key={link}>
-                    <a 
-                      href="#" 
+                    <a
+                      href="#"
                       className="text-sm text-primary-foreground/60 hover:text-primary-foreground transition-colors"
                     >
                       {link}
@@ -61,7 +61,7 @@ export function Footer() {
         {/* Bottom bar */}
         <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-primary-foreground/50">
-            © 2025 MineWatch. All rights reserved.
+            © 2026 MineWatch. Developed by Proforce Galaxies.
           </p>
           <p className="text-sm text-primary-foreground/50">
             Built for mining professionals who need to prove compliance.

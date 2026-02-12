@@ -7,8 +7,7 @@ import { cn } from '@/lib/utils';
 const navLinks = [
   { label: 'Features', href: '#features' },
   { label: 'How It Works', href: '#how-it-works' },
-  { label: 'Pricing', href: '#pricing' },
-  { label: 'Resources', href: '#resources' },
+  { label: 'About', href: '#about' },
 ];
 
 interface NavbarProps {
@@ -57,8 +56,8 @@ export function Navbar({ onDemoClick, variant = 'transparent' }: NavbarProps) {
               href={link.href}
               className={cn(
                 "text-sm font-medium transition-colors",
-                variant === 'transparent' 
-                  ? 'text-white/70 hover:text-white' 
+                variant === 'transparent'
+                  ? 'text-white/70 hover:text-white'
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >
@@ -69,23 +68,23 @@ export function Navbar({ onDemoClick, variant = 'transparent' }: NavbarProps) {
 
         {/* CTA buttons */}
         <div className="hidden md:flex items-center gap-3">
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             size="sm"
             className={cn(
-              variant === 'transparent' 
-                ? 'text-white/80 hover:text-white hover:bg-white/10' 
+              variant === 'transparent'
+                ? 'text-white/80 hover:text-white hover:bg-white/10'
                 : ''
             )}
           >
             Sign In
           </Button>
-          <Button 
+          <Button
             size="sm"
             onClick={onDemoClick}
             className="bg-accent text-accent-foreground hover:bg-accent/90"
           >
-            Request Demo
+            Get Started
           </Button>
         </div>
 
