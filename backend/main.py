@@ -518,12 +518,22 @@ def create_analysis_run(payload: AnalysisRunCreate) -> AnalysisRunOut:
                     uri=s["uri"],
                 )
 
+        # Get mine name for logging
+        mine_name = None
+        if mine_area:
+            name_row = conn.execute("SELECT name FROM mine_area WHERE id = 1").fetchone()
+            if name_row:
+                mine_name = name_row["name"]
+                mine_area["name"] = mine_name
+
         zones, alerts = run_analysis(
             mine_area=mine_area,
             baseline_date=payload.baseline_date,
             latest_date=payload.latest_date,
             baseline_scene=baseline_scene,
             latest_scene=latest_scene,
+            run_id=run_id,
+            save_indices=True,
         )
 
         for z in zones:
@@ -1069,6 +1079,89 @@ def clear_all_analysis() -> dict[str, str]:
         raise HTTPException(status_code=500, detail=f"Failed to clear data: {str(e)}")
     finally:
         conn.close()
+
+
+@app.get("/analysis-runs/{run_id}/indices")
+def get_run_indices(run_id: int) -> dict[str, Any]:
+    """
+    Returns URLs and metadata for all index layers (NDVI, NDWI, BSI) for an analysis run.
+    Includes baseline, latest, and change detection layers.
+    """
+    from pathlib import Path as PathLib
+    
+    cache_dir = CACHE_DIR
+    index_dir = PathLib(__file__).parent / "data" / "indices"
+    
+    def get_layer_info(prefix: str, index_type: str) -> Optional[dict[str, Any]]:
+        """Get preview URL and bounds for an index layer if it exists."""
+        preview_name = f"run{run_id}_{prefix}_{index_type}.png"
+        preview_path = cache_dir / preview_name
+        geotiff_name = f"run{run_id}_{prefix}_{index_type}.tif"
+        geotiff_path = index_dir / geotiff_name
+        
+        if preview_path.exists():
+            bounds = None
+            if geotiff_path.exists():
+                try:
+                    from backend.utils.spatial import get_raster_bounds_4326
+                    bounds = get_raster_bounds_4326(str(geotiff_path))
+                except Exception:
+                    pass
+            
+            return {
+                "url": f"/data/cache/{preview_name}",
+                "bounds": bounds,
+                "geotiff_url": f"/data/indices/{geotiff_name}" if geotiff_path.exists() else None
+            }
+        return None
+    
+    def get_change_layer_info(index_type: str) -> Optional[dict[str, Any]]:
+        """Get preview URL and bounds for a change detection layer."""
+        preview_name = f"run{run_id}_change_{index_type}.png"
+        preview_path = cache_dir / preview_name
+        geotiff_name = f"run{run_id}_change_{index_type}.tif"
+        geotiff_path = index_dir / geotiff_name
+        
+        if preview_path.exists():
+            bounds = None
+            if geotiff_path.exists():
+                try:
+                    from backend.utils.spatial import get_raster_bounds_4326
+                    bounds = get_raster_bounds_4326(str(geotiff_path))
+                except Exception:
+                    pass
+            
+            return {
+                "url": f"/data/cache/{preview_name}",
+                "bounds": bounds,
+                "geotiff_url": f"/data/indices/{geotiff_name}" if geotiff_path.exists() else None
+            }
+        return None
+    
+    return {
+        "run_id": run_id,
+        "baseline": {
+            "ndvi": get_layer_info("baseline", "ndvi"),
+            "ndwi": get_layer_info("baseline", "ndwi"),
+            "bsi": get_layer_info("baseline", "bsi"),
+        },
+        "latest": {
+            "ndvi": get_layer_info("latest", "ndvi"),
+            "ndwi": get_layer_info("latest", "ndwi"),
+            "bsi": get_layer_info("latest", "bsi"),
+        },
+        "change": {
+            "ndvi": get_change_layer_info("ndvi"),
+            "ndwi": get_change_layer_info("ndwi"),
+            "bsi": get_change_layer_info("bsi"),
+        }
+    }
+
+
+# Mount indices directory for serving GeoTIFFs
+INDEX_DIR = Path(__file__).parent / "data" / "indices"
+INDEX_DIR.mkdir(parents=True, exist_ok=True)
+app.mount("/data/indices", StaticFiles(directory=INDEX_DIR), name="indices")
 
 
 if __name__ == "__main__":

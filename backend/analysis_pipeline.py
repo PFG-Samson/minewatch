@@ -1,16 +1,24 @@
 from __future__ import annotations
 import numpy as np
 import os
-from dataclasses import dataclass
-from typing import Any, Optional, List, Tuple
+from dataclasses import dataclass, field
+from typing import Any, Optional, List, Tuple, Dict
 
-from backend.utils.stac_downloader import download_sentinel2_bands
+from backend.utils.stac_downloader import (
+    download_sentinel2_bands,
+    download_sentinel2_bands_with_validation
+)
 from backend.utils.spatial import (
     calculate_ndvi, calculate_ndwi, calculate_bsi, 
     clip_raster_to_geometry, vectorize_mask
 )
+from backend.utils.coverage_validator import validate_coverage, CoverageResult
+from backend.utils.index_generator import (
+    generate_index, generate_change_preview, generate_all_indices, IndexResult
+)
 
 from backend.alert_rules import Alert, Zone
+
 
 @dataclass(frozen=True)
 class ImageryScene:
@@ -20,6 +28,7 @@ class ImageryScene:
     cloud_cover: Optional[float]
     uri: Optional[str]
 
+
 def run_analysis(
     *,
     mine_area: Optional[dict[str, Any]],
@@ -27,7 +36,24 @@ def run_analysis(
     latest_date: Optional[str],
     baseline_scene: Optional[ImageryScene] = None,
     latest_scene: Optional[ImageryScene] = None,
+    run_id: Optional[int] = None,
+    save_indices: bool = True,
 ) -> tuple[list[Zone], list[Alert]]:
+    """
+    Runs the full analysis pipeline with coverage validation and index generation.
+    
+    Args:
+        mine_area: Mine area configuration with boundary
+        baseline_date: Date string for baseline
+        latest_date: Date string for latest
+        baseline_scene: Baseline imagery scene
+        latest_scene: Latest imagery scene
+        run_id: Analysis run ID for saving outputs
+        save_indices: Whether to save index GeoTIFFs and previews
+    
+    Returns:
+        Tuple of (zones, alerts)
+    """
     # Return empty results if no real scenes provided
     if baseline_scene is None or latest_scene is None or mine_area is None:
         print("Insufficient data for analysis - returning empty results")
@@ -40,80 +66,167 @@ def run_analysis(
         # BSI: Red (B04), Blue (B02), NIR (B08), SWIR1 (B11)
         required_bands = ["B02", "B03", "B04", "B08", "B11"]
         
-        print(f"Starting real analysis for {mine_area.get('name', 'Mine')}")
+        print(f"\n{'='*60}")
+        print(f"ANALYSIS PIPELINE - {mine_area.get('name', 'Mine')}")
+        print(f"{'='*60}")
         print(f"Baseline Scene: {baseline_scene.uri}")
         print(f"Latest Scene: {latest_scene.uri}")
+        if run_id:
+            print(f"Run ID: {run_id}")
 
         # Validate that we're not comparing the same scene
         if baseline_scene.uri == latest_scene.uri:
-            print("⚠️  WARNING: Baseline and latest scenes are identical")
+            print("\n⚠️  WARNING: Baseline and latest scenes are identical")
             print("   No meaningful change detection can be performed")
             print("   → Please run STAC ingestion to download more scenes")
-            # Return empty results instead of demo data
             return [], []
-
-        baseline_paths = download_sentinel2_bands(baseline_scene.uri, required_bands)
-        latest_paths = download_sentinel2_bands(latest_scene.uri, required_bands)
 
         geometry = mine_area.get("boundary")
         if not geometry:
             raise ValueError("No boundary geometry found in mine_area")
 
-        # 2. Process Baseline
+        # 2. Download bands with coverage validation
+        print(f"\n--- STAGE 1: Download & Coverage Validation ---")
+        
+        print(f"\nDownloading baseline scene bands...")
+        baseline_result = download_sentinel2_bands_with_validation(
+            baseline_scene.uri, 
+            required_bands,
+            boundary_geojson=geometry,
+            min_coverage_percent=80.0
+        )
+        baseline_paths = baseline_result.paths
+        
+        if not baseline_result.coverage_valid:
+            print(f"  ⚠️ Baseline coverage warning: {baseline_result.message}")
+        
+        print(f"\nDownloading latest scene bands...")
+        latest_result = download_sentinel2_bands_with_validation(
+            latest_scene.uri, 
+            required_bands,
+            boundary_geojson=geometry,
+            min_coverage_percent=80.0
+        )
+        latest_paths = latest_result.paths
+        
+        if not latest_result.coverage_valid:
+            print(f"  ⚠️ Latest coverage warning: {latest_result.message}")
+
+        # 3. Process Baseline
+        print(f"\n--- STAGE 2: Clip & Resample ---")
+        print(f"Processing baseline scene...")
+        
         b_red, transform, b_crs = clip_raster_to_geometry(baseline_paths["B04"], geometry)
         target_shape = b_red.shape
+        print(f"  Target shape: {target_shape}")
         
         b_nir, _, _ = clip_raster_to_geometry(baseline_paths["B08"], geometry, target_shape, transform)
         b_green, _, _ = clip_raster_to_geometry(baseline_paths["B03"], geometry, target_shape, transform)
         b_blue, _, _ = clip_raster_to_geometry(baseline_paths["B02"], geometry, target_shape, transform)
         b_swir, _, _ = clip_raster_to_geometry(baseline_paths["B11"], geometry, target_shape, transform)
+        print(f"  ✓ Baseline bands clipped")
 
-        b_ndvi = calculate_ndvi(b_red, b_nir)
-        b_ndwi = calculate_ndwi(b_green, b_nir)
-        b_bsi = calculate_bsi(b_red, b_blue, b_nir, b_swir)
-
-        # 3. Process Latest
+        # 4. Process Latest
+        print(f"\nProcessing latest scene...")
         l_red, _, _ = clip_raster_to_geometry(latest_paths["B04"], geometry, target_shape, transform)
         l_nir, _, _ = clip_raster_to_geometry(latest_paths["B08"], geometry, target_shape, transform)
         l_green, _, _ = clip_raster_to_geometry(latest_paths["B03"], geometry, target_shape, transform)
         l_blue, _, _ = clip_raster_to_geometry(latest_paths["B02"], geometry, target_shape, transform)
         l_swir, _, _ = clip_raster_to_geometry(latest_paths["B11"], geometry, target_shape, transform)
+        print(f"  ✓ Latest bands clipped")
 
+        # 5. Calculate Indices
+        print(f"\n--- STAGE 3: Index Calculation ---")
+        
+        print(f"Calculating baseline indices...")
+        b_ndvi = calculate_ndvi(b_red, b_nir)
+        b_ndwi = calculate_ndwi(b_green, b_nir)
+        b_bsi = calculate_bsi(b_red, b_blue, b_nir, b_swir)
+        print(f"  NDVI: min={b_ndvi.min():.3f}, max={b_ndvi.max():.3f}, mean={b_ndvi.mean():.3f}")
+        print(f"  NDWI: min={b_ndwi.min():.3f}, max={b_ndwi.max():.3f}, mean={b_ndwi.mean():.3f}")
+        print(f"  BSI:  min={b_bsi.min():.3f}, max={b_bsi.max():.3f}, mean={b_bsi.mean():.3f}")
+
+        print(f"\nCalculating latest indices...")
         l_ndvi = calculate_ndvi(l_red, l_nir)
         l_ndwi = calculate_ndwi(l_green, l_nir)
         l_bsi = calculate_bsi(l_red, l_blue, l_nir, l_swir)
+        print(f"  NDVI: min={l_ndvi.min():.3f}, max={l_ndvi.max():.3f}, mean={l_ndvi.mean():.3f}")
+        print(f"  NDWI: min={l_ndwi.min():.3f}, max={l_ndwi.max():.3f}, mean={l_ndwi.mean():.3f}")
+        print(f"  BSI:  min={l_bsi.min():.3f}, max={l_bsi.max():.3f}, mean={l_bsi.mean():.3f}")
 
-        # 4. Change Detection Logic
+        # 6. Save indices and generate previews
+        if save_indices and run_id:
+            print(f"\n--- STAGE 4: Save Indices & Generate Previews ---")
+            
+            # Baseline indices
+            print(f"Saving baseline indices...")
+            baseline_ndvi_result = generate_index(b_ndvi, transform, b_crs, 'ndvi', run_id, 'baseline')
+            baseline_ndwi_result = generate_index(b_ndwi, transform, b_crs, 'ndwi', run_id, 'baseline')
+            baseline_bsi_result = generate_index(b_bsi, transform, b_crs, 'bsi', run_id, 'baseline')
+            print(f"  ✓ Baseline NDVI: {baseline_ndvi_result.preview_url}")
+            print(f"  ✓ Baseline NDWI: {baseline_ndwi_result.preview_url}")
+            print(f"  ✓ Baseline BSI: {baseline_bsi_result.preview_url}")
+            
+            # Latest indices
+            print(f"\nSaving latest indices...")
+            latest_ndvi_result = generate_index(l_ndvi, transform, b_crs, 'ndvi', run_id, 'latest')
+            latest_ndwi_result = generate_index(l_ndwi, transform, b_crs, 'ndwi', run_id, 'latest')
+            latest_bsi_result = generate_index(l_bsi, transform, b_crs, 'bsi', run_id, 'latest')
+            print(f"  ✓ Latest NDVI: {latest_ndvi_result.preview_url}")
+            print(f"  ✓ Latest NDWI: {latest_ndwi_result.preview_url}")
+            print(f"  ✓ Latest BSI: {latest_bsi_result.preview_url}")
+            
+            # Change layers
+            print(f"\nGenerating change detection layers...")
+            ndvi_change = generate_change_preview(b_ndvi, l_ndvi, transform, b_crs, 'ndvi', run_id)
+            ndwi_change = generate_change_preview(b_ndwi, l_ndwi, transform, b_crs, 'ndwi', run_id)
+            bsi_change = generate_change_preview(b_bsi, l_bsi, transform, b_crs, 'bsi', run_id)
+            print(f"  ✓ NDVI Change: {ndvi_change.preview_url}")
+            print(f"  ✓ NDWI Change: {ndwi_change.preview_url}")
+            print(f"  ✓ BSI Change: {bsi_change.preview_url}")
+
+        # 7. Change Detection Logic
+        print(f"\n--- STAGE 5: Change Detection & Zone Generation ---")
         zones: list[Zone] = []
 
         # Vegetation Loss (NDVI drop > 0.15)
         ndvi_diff = l_ndvi - b_ndvi
         veg_loss_mask = (ndvi_diff < -0.15).astype(np.uint8)
         veg_loss_features = vectorize_mask(veg_loss_mask, transform, b_crs)
+        veg_loss_count = 0
         for feat in veg_loss_features:
             area = _calculate_area(feat["geometry"])
-            if area > 0.1: # Min 0.1 ha to show up
+            if area > 0.1:  # Min 0.1 ha to show up
                 zones.append(Zone("vegetation_loss", area, feat["geometry"]))
+                veg_loss_count += 1
+        print(f"  Vegetation loss zones: {veg_loss_count}")
 
         # Bare Soil Expansion (BSI increase > 0.1) - Mining Pits
         bsi_diff = l_bsi - b_bsi
         soil_gain_mask = (bsi_diff > 0.1).astype(np.uint8)
         soil_features = vectorize_mask(soil_gain_mask, transform, b_crs)
+        mining_count = 0
         for feat in soil_features:
             area = _calculate_area(feat["geometry"])
             if area > 0.1:
                 zones.append(Zone("mining_expansion", area, feat["geometry"]))
+                mining_count += 1
+        print(f"  Mining expansion zones: {mining_count}")
 
         # Water Change (NDWI delta > 0.2)
         ndwi_diff = l_ndwi - b_ndwi
         water_gain_mask = (ndwi_diff > 0.2).astype(np.uint8)
         water_features = vectorize_mask(water_gain_mask, transform, b_crs)
+        water_count = 0
         for feat in water_features:
             area = _calculate_area(feat["geometry"])
             if area > 0.05:
                 zones.append(Zone("water_accumulation", area, feat["geometry"]))
+                water_count += 1
+        print(f"  Water accumulation zones: {water_count}")
 
-        # 5. Generate alerts using rule engine
+        # 8. Generate alerts using rule engine
+        print(f"\n--- STAGE 6: Alert Generation ---")
         from backend.alert_rules import AlertRuleEngine
         
         alert_engine = AlertRuleEngine()
@@ -123,12 +236,20 @@ def run_analysis(
             "latest_date": latest_date
         }
         alerts = alert_engine.evaluate_zones(zones, context)
+        print(f"  Generated {len(alerts)} alerts")
 
-        print(f"Generated {len(zones)} zones and {len(alerts)} alerts")
+        print(f"\n{'='*60}")
+        print(f"ANALYSIS COMPLETE")
+        print(f"  Total zones: {len(zones)}")
+        print(f"  Total alerts: {len(alerts)}")
+        print(f"{'='*60}\n")
+        
         return zones, alerts
 
     except Exception as e:
-        print(f"Error in scientific pipeline: {e}")
+        import traceback
+        print(f"\n✗ Error in analysis pipeline: {e}")
+        traceback.print_exc()
         # Return empty lists instead of demo data to prevent mock data polluting the dashboard
         return [], []
 
