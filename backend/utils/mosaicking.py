@@ -23,6 +23,7 @@ from backend.utils.coverage_validator import (
     extract_boundary_geometry,
     CoverageResult
 )
+from backend.config import COVERAGE_CONFIG
 
 
 # Directory for mosaic outputs
@@ -142,7 +143,7 @@ def create_mosaic(
             coverage = validate_coverage(
                 str(output_path),
                 boundary_geojson,
-                min_coverage_percent=90.0,
+                min_coverage_percent=COVERAGE_CONFIG["MINIMUM_REQUIRED"],
                 check_valid_data=False  # Faster, just check bounds
             )
         else:
@@ -206,7 +207,7 @@ def _process_single_raster(
             coverage = validate_coverage(
                 str(output_path),
                 boundary_geojson,
-                min_coverage_percent=90.0,
+                min_coverage_percent=COVERAGE_CONFIG["MINIMUM_REQUIRED"],
                 check_valid_data=False
             )
         else:
@@ -370,7 +371,7 @@ def create_band_mosaic_set(
 def check_mosaic_needed(
     raster_path: str,
     boundary_geojson: dict,
-    min_coverage_percent: float = 95.0
+    min_coverage_percent: float = None
 ) -> Tuple[bool, CoverageResult]:
     """
     Checks if mosaicking is needed for a single raster to cover a boundary.
@@ -378,11 +379,14 @@ def check_mosaic_needed(
     Args:
         raster_path: Path to the raster file
         boundary_geojson: Target boundary
-        min_coverage_percent: Required coverage threshold
+        min_coverage_percent: Required coverage threshold (default from config)
         
     Returns:
         Tuple of (needs_mosaic: bool, coverage_result: CoverageResult)
     """
+    if min_coverage_percent is None:
+        min_coverage_percent = COVERAGE_CONFIG["MOSAIC_THRESHOLD"]
+    
     coverage = validate_coverage(
         raster_path,
         boundary_geojson,

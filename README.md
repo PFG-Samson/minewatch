@@ -5,18 +5,24 @@ MineWatch is a web application that helps teams monitor land-use and environment
 **Key Features:**
 
 - **Real Scientific Analysis Pipeline:** Authentic calculation of **NDVI** (Vegetation), **BSI** (Bare Soil), and **NDWI** (Water) from multi-spectral Sentinel-2 satellite imagery with change detection between acquisition dates.
+- **Production-Grade Multi-Scene Mosaicking:** Automatically combines multiple satellite tiles when a single scene doesn't fully cover the AOI, with intelligent scene selection based on cloud cover and acquisition date.
+- **Comprehensive Coverage Validation:** Validates imagery coverage at every step (pre-download, post-download, post-mosaic) ensuring minimum 95% boundary coverage or graceful failure with actionable guidance.
+- **Intelligent Scene Selection:** Prioritizes low-cloud scenes within 30 days of target date, filters out scenes with >80% cloud cover, and dynamically calculates required scenes based on AOI size.
 - **Intelligent Alert System:** Configurable rule-based alerts with severity levels (high/medium/low) based on area thresholds and change types.
 - **Scene Selection Controls:** Users can select specific baseline and latest scenes for analysis via UI dropdowns showing acquisition dates and cloud cover.
 - **Dedicated Settings Tab:** Full-screen project configuration for Site Name, Description, GeoJSON boundary upload, and Buffer zone.
-- **Automated Satellite Ingestion via STAC:** Metadata search and automated band download (B02-Blue, B03-Green, B04-Red, B08-NIR, B11-SWIR) from Microsoft Planetary Computer.
+- **Automated Satellite Ingestion via STAC:** Metadata search and automated band download (B02-Blue, B03-Green, B04-Red, B08-NIR, B11-SWIR) from Microsoft Planetary Computer with coverage-aware ingestion.
 - **Interactive Map:** Renders boundaries, buffer zones, and scientific change overlays; features reactive zoom to latest AOI.
 - **Alerts + PDF Reports:** Automated detection of significant land changes with PDF summary export.
+- **Production-Ready Error Handling:** Graceful failures with detailed error messages, run status tracking, and user-actionable guidance.
 
 ## Repository structure
 
-- `backend/` FastAPI + SQLite API + Scientific Utilities
+- `backend/` FastAPI + SQLite API + Scientific Utilities + Production Configuration
 - `src/` React + Vite frontend
 - `FAQ.md` Comprehensive project Q&A
+- `PRODUCTION_READY_SUMMARY.md` Production deployment guide
+- `COVERAGE_ANALYSIS.md` Technical coverage analysis
 
 ## Prerequisites
 
@@ -117,9 +123,27 @@ The system performs real change detection comparing two satellite scenes:
 
 7. **Save Results** - Stores zones, alerts (with geometry), and metadata in database
 
-**Note:** If only one scene is available, the system returns empty results. Run STAC ingestion to get at least 2 scenes from different dates.
+**Multi-Scene Mosaicking:**
+- If a single scene doesn't fully cover the AOI (< 92% coverage), the system automatically:
+  1. Searches for additional scenes from the database
+  2. Prioritizes scenes with low cloud cover and similar acquisition dates
+  3. Downloads and mosaics multiple tiles to achieve 95%+ coverage
+  4. Validates final coverage before proceeding
 
-## Alert Rules Configuration
+**Coverage Validation:**
+- Pre-download: Checks scene footprints from STAC metadata
+- Post-download: Validates actual pixel data coverage
+- Post-mosaic: Ensures combined coverage meets requirements
+- Graceful Failure: If coverage < 95%, analysis fails with:
+  - Current coverage percentage
+  - Number of scenes attempted
+  - Actionable guidance (e.g., "Run STAC ingestion for more scenes")
+
+**Note:** If only one scene is available and it doesn't meet minimum coverage, the system will fail with guidance. Run STAC ingestion to get more scenes. At least 2 different scenes are required for change detection.
+
+## Configuration
+
+### Alert Rules Configuration
 
 The system uses a configurable rule-based alert engine defined in `backend/config/alert_rules.json`:
 
@@ -135,6 +159,51 @@ The system uses a configurable rule-based alert engine defined in `backend/confi
 
 **Customization:**
 Edit `backend/config/alert_rules.json` to adjust thresholds, enable/disable rules, or modify alert messages.
+
+### Coverage & Validation Configuration
+
+Production-grade configuration in `backend/config.py`:
+
+**Coverage Thresholds:**
+```python
+COVERAGE_CONFIG = {
+    "MINIMUM_REQUIRED": 95.0,      # Hard requirement for analysis
+    "MOSAIC_THRESHOLD": 92.0,      # Triggers multi-scene mosaicking
+    "TARGET_COVERAGE": 98.0,       # Ideal goal
+    "DOWNLOAD_MINIMUM": 80.0       # Per-scene minimum
+}
+```
+
+**Temporal Configuration:**
+```python
+TEMPORAL_CONFIG = {
+    "MAX_DATE_DIFF_DAYS": 30.0,    # Max days between scenes in mosaic
+}
+```
+
+**Scene Selection:**
+```python
+SCENE_CONFIG = {
+    "MAX_CLOUD_COVER": 80.0,       # Skip scenes above this
+    "PREFER_LOW_CLOUD": True,      # Prioritize clearer scenes
+}
+```
+
+**Validation Flags:**
+```python
+VALIDATION_CONFIG = {
+    "REQUIRE_DB_CONN": True,       # Required in production
+    "VALIDATE_POST_MOSAIC": True,  # Validate after mosaicking
+    "FAIL_ON_INSUFFICIENT_COVERAGE": True  # Strict validation
+}
+```
+
+**Adjusting for Your Use Case:**
+- For larger AOIs where 95% is too strict: Lower `MINIMUM_REQUIRED` to 90%
+- For rapid monitoring: Set `MAX_DATE_DIFF_DAYS` to 7 days
+- For development/testing: Set `REQUIRE_DB_CONN` and `FAIL_ON_INSUFFICIENT_COVERAGE` to False
+
+See `PRODUCTION_READY_SUMMARY.md` for complete configuration guide.
 
 ## Troubleshooting (Windows)
 

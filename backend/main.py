@@ -11,17 +11,28 @@ from urllib.request import Request, urlopen
 from contextlib import asynccontextmanager
 import uvicorn
 import requests
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from fastapi.staticfiles import StaticFiles
+import zipfile
+import xml.etree.ElementTree as ET
+import re
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas
 
 from backend.analysis_pipeline import ImageryScene, run_analysis
 from backend.utils.imagery_utils import generate_rgb_png, CACHE_DIR
+from backend.exceptions import (
+    InsufficientCoverageError,
+    MosaicError,
+    IdenticalScenesError,
+    DatabaseConnectionError,
+    AnalysisError,
+    MineWatchError
+)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -363,6 +374,228 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+def _parse_kml_coordinates(coord_string: str) -> list[list[float]]:
+    """
+    Parse KML coordinate string into list of [lon, lat] or [lon, lat, alt] arrays.
+    KML format: "lon,lat,alt lon,lat,alt ..." (space-separated, comma within)
+    """
+    coords = []
+    # Split by whitespace and filter empty strings
+    parts = coord_string.strip().split()
+    for part in parts:
+        if not part.strip():
+            continue
+        values = part.split(',')
+        if len(values) >= 2:
+            try:
+                lon = float(values[0])
+                lat = float(values[1])
+                coords.append([lon, lat])
+            except ValueError:
+                continue
+    return coords
+
+
+def _kml_to_geojson(kml_content: str) -> dict[str, Any]:
+    """
+    Convert KML content to GeoJSON.
+    Supports: Point, LineString, Polygon, MultiGeometry.
+    """
+    # KML namespaces
+    namespaces = {
+        'kml': 'http://www.opengis.net/kml/2.2',
+        'gx': 'http://www.google.com/kml/ext/2.2',
+    }
+    
+    # Also try without namespace for older KML files
+    try:
+        root = ET.fromstring(kml_content)
+    except ET.ParseError as e:
+        raise ValueError(f"Invalid KML XML: {e}")
+    
+    features = []
+    
+    # Find all Placemarks (with or without namespace)
+    placemarks = root.findall('.//{http://www.opengis.net/kml/2.2}Placemark')
+    if not placemarks:
+        placemarks = root.findall('.//Placemark')
+    
+    for placemark in placemarks:
+        # Get name
+        name_elem = placemark.find('{http://www.opengis.net/kml/2.2}name')
+        if name_elem is None:
+            name_elem = placemark.find('name')
+        name = name_elem.text if name_elem is not None else "Unnamed"
+        
+        # Get description
+        desc_elem = placemark.find('{http://www.opengis.net/kml/2.2}description')
+        if desc_elem is None:
+            desc_elem = placemark.find('description')
+        description = desc_elem.text if desc_elem is not None else ""
+        
+        geometry = None
+        
+        # Try to find Polygon
+        polygon = placemark.find('.//{http://www.opengis.net/kml/2.2}Polygon')
+        if polygon is None:
+            polygon = placemark.find('.//Polygon')
+        
+        if polygon is not None:
+            outer = polygon.find('.//{http://www.opengis.net/kml/2.2}outerBoundaryIs//{http://www.opengis.net/kml/2.2}coordinates')
+            if outer is None:
+                outer = polygon.find('.//outerBoundaryIs//coordinates')
+            
+            if outer is not None and outer.text:
+                coords = _parse_kml_coordinates(outer.text)
+                if coords:
+                    # GeoJSON Polygon needs nested array
+                    geometry = {
+                        "type": "Polygon",
+                        "coordinates": [coords]
+                    }
+        
+        # Try to find LineString
+        if geometry is None:
+            linestring = placemark.find('.//{http://www.opengis.net/kml/2.2}LineString')
+            if linestring is None:
+                linestring = placemark.find('.//LineString')
+            
+            if linestring is not None:
+                coords_elem = linestring.find('{http://www.opengis.net/kml/2.2}coordinates')
+                if coords_elem is None:
+                    coords_elem = linestring.find('coordinates')
+                
+                if coords_elem is not None and coords_elem.text:
+                    coords = _parse_kml_coordinates(coords_elem.text)
+                    if coords:
+                        geometry = {
+                            "type": "LineString",
+                            "coordinates": coords
+                        }
+        
+        # Try to find Point
+        if geometry is None:
+            point = placemark.find('.//{http://www.opengis.net/kml/2.2}Point')
+            if point is None:
+                point = placemark.find('.//Point')
+            
+            if point is not None:
+                coords_elem = point.find('{http://www.opengis.net/kml/2.2}coordinates')
+                if coords_elem is None:
+                    coords_elem = point.find('coordinates')
+                
+                if coords_elem is not None and coords_elem.text:
+                    coords = _parse_kml_coordinates(coords_elem.text)
+                    if coords:
+                        geometry = {
+                            "type": "Point",
+                            "coordinates": coords[0]
+                        }
+        
+        if geometry:
+            features.append({
+                "type": "Feature",
+                "properties": {
+                    "name": name,
+                    "description": description
+                },
+                "geometry": geometry
+            })
+    
+    if not features:
+        raise ValueError("No valid geometries found in KML file")
+    
+    return {
+        "type": "FeatureCollection",
+        "features": features
+    }
+
+
+@app.post("/convert-boundary")
+async def convert_boundary_file(file: UploadFile = File(...)) -> dict[str, Any]:
+    """
+    Convert uploaded boundary file to GeoJSON.
+    
+    Supports:
+    - .geojson, .json (passed through with validation)
+    - .kml (converted to GeoJSON)
+    - .kmz (unzipped, then KML converted to GeoJSON)
+    
+    Returns:
+        GeoJSON FeatureCollection or Geometry
+    """
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="No filename provided")
+    
+    filename = file.filename.lower()
+    content = await file.read()
+    
+    try:
+        # Handle GeoJSON files
+        if filename.endswith('.geojson') or filename.endswith('.json'):
+            try:
+                geojson = json.loads(content.decode('utf-8'))
+                # Validate it looks like GeoJSON
+                if not isinstance(geojson, dict):
+                    raise ValueError("Not a valid GeoJSON object")
+                if 'type' not in geojson:
+                    raise ValueError("Missing 'type' field in GeoJSON")
+                return {
+                    "success": True,
+                    "format": "geojson",
+                    "geojson": geojson
+                }
+            except json.JSONDecodeError as e:
+                raise HTTPException(status_code=400, detail=f"Invalid JSON: {e}")
+        
+        # Handle KMZ files (zipped KML)
+        elif filename.endswith('.kmz'):
+            try:
+                with zipfile.ZipFile(BytesIO(content)) as zf:
+                    # Find the KML file inside (usually doc.kml)
+                    kml_files = [f for f in zf.namelist() if f.lower().endswith('.kml')]
+                    if not kml_files:
+                        raise ValueError("No KML file found inside KMZ archive")
+                    
+                    # Read the first KML file
+                    kml_content = zf.read(kml_files[0]).decode('utf-8')
+                    geojson = _kml_to_geojson(kml_content)
+                    return {
+                        "success": True,
+                        "format": "kmz",
+                        "source_file": kml_files[0],
+                        "geojson": geojson
+                    }
+            except zipfile.BadZipFile:
+                raise HTTPException(status_code=400, detail="Invalid KMZ file (not a valid ZIP archive)")
+        
+        # Handle KML files
+        elif filename.endswith('.kml'):
+            try:
+                kml_content = content.decode('utf-8')
+                geojson = _kml_to_geojson(kml_content)
+                return {
+                    "success": True,
+                    "format": "kml",
+                    "geojson": geojson
+                }
+            except UnicodeDecodeError:
+                raise HTTPException(status_code=400, detail="KML file is not valid UTF-8 text")
+        
+        else:
+            supported = ".geojson, .json, .kml, .kmz"
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Unsupported file format. Supported: {supported}"
+            )
+    
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        print(f"Error converting boundary file: {e}")
+        raise HTTPException(status_code=500, detail=f"Conversion failed: {str(e)}")
+
+
 @app.get("/mine-area", response_model=MineAreaOut)
 def get_mine_area() -> MineAreaOut:
     conn = get_db()
@@ -528,16 +761,80 @@ def create_analysis_run(payload: AnalysisRunCreate) -> AnalysisRunOut:
                 mine_name = name_row["name"]
                 mine_area["name"] = mine_name
 
-        zones, alerts = run_analysis(
-            mine_area=mine_area,
-            baseline_date=payload.baseline_date,
-            latest_date=payload.latest_date,
-            baseline_scene=baseline_scene,
-            latest_scene=latest_scene,
-            run_id=run_id,
-            save_indices=True,
-            db_conn=conn,  # Pass connection for multi-scene mosaicking
-        )
+        try:
+            zones, alerts = run_analysis(
+                mine_area=mine_area,
+                baseline_date=payload.baseline_date,
+                latest_date=payload.latest_date,
+                baseline_scene=baseline_scene,
+                latest_scene=latest_scene,
+                run_id=run_id,
+                save_indices=True,
+                db_conn=conn,  # Pass connection for multi-scene mosaicking
+            )
+        except InsufficientCoverageError as e:
+            # Handle coverage errors with detailed user message
+            conn.execute(
+                "UPDATE analysis_run SET status = ? WHERE id = ?",
+                ("failed_coverage", run_id)
+            )
+            conn.commit()
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "error": "insufficient_coverage",
+                    "message": e.get_user_message() if hasattr(e, 'get_user_message') else str(e),
+                    "coverage_percent": e.coverage_percent,
+                    "required_percent": e.required_percent,
+                    "run_id": run_id
+                }
+            )
+        except IdenticalScenesError as e:
+            # Handle identical scenes error
+            conn.execute(
+                "UPDATE analysis_run SET status = ? WHERE id = ?",
+                ("failed_identical_scenes", run_id)
+            )
+            conn.commit()
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "error": "identical_scenes",
+                    "message": str(e),
+                    "run_id": run_id
+                }
+            )
+        except MosaicError as e:
+            # Handle mosaic errors
+            conn.execute(
+                "UPDATE analysis_run SET status = ? WHERE id = ?",
+                ("failed_mosaic", run_id)
+            )
+            conn.commit()
+            raise HTTPException(
+                status_code=500,
+                detail={
+                    "error": "mosaic_failed",
+                    "message": str(e),
+                    "band": e.band_name if hasattr(e, 'band_name') else None,
+                    "run_id": run_id
+                }
+            )
+        except (DatabaseConnectionError, AnalysisError, MineWatchError) as e:
+            # Handle other known errors
+            conn.execute(
+                "UPDATE analysis_run SET status = ? WHERE id = ?",
+                ("failed", run_id)
+            )
+            conn.commit()
+            raise HTTPException(
+                status_code=500,
+                detail={
+                    "error": type(e).__name__,
+                    "message": str(e),
+                    "run_id": run_id
+                }
+            )
 
         for z in zones:
             conn.execute(
