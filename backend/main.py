@@ -187,6 +187,11 @@ def get_analysis_report(run_id: int) -> Response:
         run = conn.execute("SELECT * FROM analysis_run WHERE id = ?", (run_id,)).fetchone()
         if run is None:
             raise HTTPException(status_code=404, detail="Analysis run not found")
+        
+        # Get mine area information
+        mine_area = conn.execute("SELECT name, description FROM mine_area WHERE id = 1").fetchone()
+        mine_name = mine_area["name"] if mine_area else "Mine Site"
+        mine_description = mine_area["description"] if mine_area and mine_area["description"] else None
 
         zones = conn.execute(
             "SELECT zone_type, area_ha FROM analysis_zone WHERE run_id = ?",
@@ -220,7 +225,22 @@ def get_analysis_report(run_id: int) -> Response:
             c.drawString(x, y, text)
             y -= dy
 
+        # Header with mine name
         draw_line("MineWatch – Environmental Change Report", dy=9 * mm, font="Helvetica-Bold", size=16)
+        draw_line(f"Site: {mine_name}", dy=7 * mm, font="Helvetica-Bold", size=13)
+        
+        # Add description if available
+        if mine_description:
+            # Word wrap description if too long
+            max_chars = 85
+            if len(mine_description) > max_chars:
+                desc_lines = [mine_description[i:i+max_chars] for i in range(0, len(mine_description), max_chars)]
+                for desc_line in desc_lines[:2]:  # Max 2 lines
+                    draw_line(desc_line, dy=5.5 * mm, font="Helvetica-Oblique", size=10)
+            else:
+                draw_line(mine_description, dy=6 * mm, font="Helvetica-Oblique", size=10)
+        
+        y -= 3 * mm  # Extra spacing
         draw_line(f"Run ID: {int(run['id'])}")
         draw_line(f"Created (UTC): {run['created_at']}")
         draw_line(f"Baseline date: {run['baseline_date'] or 'n/a'}")
@@ -251,7 +271,10 @@ def get_analysis_report(run_id: int) -> Response:
         c.save()
 
         pdf_bytes = buf.getvalue()
-        filename = f"minewatch-report-run-{run_id}.pdf"
+        # Include mine name in filename (sanitized)
+        safe_mine_name = "".join(c if c.isalnum() or c in (' ', '-', '_') else '_' for c in mine_name)
+        safe_mine_name = safe_mine_name.replace(' ', '-').lower()[:30]  # Max 30 chars
+        filename = f"minewatch-{safe_mine_name}-run-{run_id}.pdf"
 
         return Response(
             content=pdf_bytes,
@@ -631,8 +654,8 @@ def get_mine_area() -> MineAreaOut:
         area_ha = area_sq_m / 10000  # Convert to hectares
 
         return MineAreaOut(
-            name=row["name"],
-            description=row["description"],
+            name=row["name"] if row["name"] else "Mine Area",
+            description=row["description"] if row["description"] else None,
             boundary=boundary,
             buffer_km=float(row["buffer_km"]),
             created_at=row["created_at"],
@@ -674,11 +697,13 @@ def upsert_mine_area(payload: MineAreaUpsert) -> MineAreaOut:
             raise HTTPException(status_code=500, detail="Failed to save mine area")
 
         return MineAreaOut(
-            name=row["name"],
+            name=row["name"] if row["name"] else "Mine Area",
+            description=row["description"] if row["description"] else None,
             boundary=json.loads(row["boundary_geojson"]),
             buffer_km=float(row["buffer_km"]),
             created_at=row["created_at"],
             updated_at=row["updated_at"],
+            area_ha=0.0,
         )
     finally:
         conn.close()
