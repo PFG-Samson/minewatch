@@ -340,8 +340,10 @@ class ImagerySceneOut(BaseModel):
 
 class StacIngestJobCreate(BaseModel):
     collection: str = Field(default="sentinel-2-l2a")
-    max_items: int = Field(default=10, ge=1, le=100)
+    max_items: int = Field(default=50, ge=1, le=200)  # Increased for multi-tile coverage
     cloud_cover_lte: Optional[float] = Field(default=20.0, ge=0.0, le=100.0)
+    ensure_coverage: bool = Field(default=True)  # Keep fetching until boundary is covered
+    min_coverage_percent: float = Field(default=95.0, ge=50.0, le=100.0)
 
 
 class AlertOut(BaseModel):
@@ -534,6 +536,7 @@ def create_analysis_run(payload: AnalysisRunCreate) -> AnalysisRunOut:
             latest_scene=latest_scene,
             run_id=run_id,
             save_indices=True,
+            db_conn=conn,  # Pass connection for multi-scene mosaicking
         )
 
         for z in zones:
@@ -606,23 +609,83 @@ def _bbox_from_geojson(obj: dict[str, Any]) -> Optional[list[float]]:
     return [min(xs), min(ys), max(xs), max(ys)]
 
 
-def _stac_search(*, bbox: list[float], collection: str, max_items: int, cloud_cover_lte: Optional[float]) -> dict[str, Any]:
+def _stac_search(
+    *, 
+    bbox: list[float], 
+    collection: str, 
+    max_items: int, 
+    cloud_cover_lte: Optional[float],
+    next_token: Optional[str] = None
+) -> dict[str, Any]:
+    """Search STAC catalog with pagination support."""
     url = "https://planetarycomputer.microsoft.com/api/stac/v1/search"
     body: dict[str, Any] = {
         "collections": [collection],
         "bbox": bbox,
-        "limit": max_items,
+        "limit": min(max_items, 100),  # API typically limits to 100 per page
     }
     if cloud_cover_lte is not None:
         body["query"] = {"eo:cloud_cover": {"lte": cloud_cover_lte}}
+    if next_token:
+        body["token"] = next_token
 
     resp = requests.post(url, json=body, timeout=30)
     resp.raise_for_status()
     return resp.json()
 
 
+def _calculate_scenes_coverage(
+    scenes_footprints: list[dict[str, Any]], 
+    boundary_geojson: dict[str, Any]
+) -> tuple[float, Any]:
+    """
+    Calculate the combined coverage of scenes over the boundary.
+    
+    Returns:
+        Tuple of (coverage_percent, covered_geometry)
+    """
+    from shapely.geometry import shape
+    from shapely.ops import unary_union
+    from backend.utils.coverage_validator import extract_boundary_geometry
+    
+    if not scenes_footprints:
+        return 0.0, None
+    
+    boundary_geom = extract_boundary_geometry(boundary_geojson)
+    boundary_area = boundary_geom.area
+    
+    if boundary_area == 0:
+        return 0.0, None
+    
+    # Convert all footprints to shapely geometries
+    footprint_geoms = []
+    for fp in scenes_footprints:
+        try:
+            geom = extract_boundary_geometry(fp)
+            if boundary_geom.intersects(geom):
+                footprint_geoms.append(geom)
+        except Exception:
+            continue
+    
+    if not footprint_geoms:
+        return 0.0, None
+    
+    # Union all footprints and intersect with boundary
+    combined = unary_union(footprint_geoms)
+    covered = boundary_geom.intersection(combined)
+    coverage_percent = (covered.area / boundary_area) * 100.0
+    
+    return coverage_percent, covered
+
+
 @app.post("/jobs/ingest-stac", response_model=list[ImagerySceneOut])
 def ingest_stac_job(payload: StacIngestJobCreate) -> list[ImagerySceneOut]:
+    """
+    Ingest satellite imagery scenes from STAC catalog.
+    
+    With ensure_coverage=True (default), this will keep fetching scenes until
+    the mine boundary is fully covered or max_items is reached.
+    """
     conn = get_db()
     try:
         mine = conn.execute("SELECT boundary_geojson FROM mine_area WHERE id = 1").fetchone()
@@ -634,65 +697,126 @@ def ingest_stac_job(payload: StacIngestJobCreate) -> list[ImagerySceneOut]:
         if bbox is None:
             raise HTTPException(status_code=400, detail="Unable to derive bbox from boundary GeoJSON")
 
-        search = _stac_search(
-            bbox=bbox,
-            collection=payload.collection,
-            max_items=payload.max_items,
-            cloud_cover_lte=payload.cloud_cover_lte,
-        )
-
-        features = search.get("features") or []
-        if not features:
-            conn.commit()
-            return []
-
         now = _utc_now_iso()
         created: list[ImagerySceneOut] = []
-
-        for item in features:
-            props = item.get("properties") or {}
-            acquired_at = props.get("datetime") or props.get("start_datetime") or now
-            cloud = props.get("eo:cloud_cover")
-            uri = item.get("id")
-            footprint = item.get("geometry")
-
-            # Check if scene already exists to avoid duplicates
-            existing = conn.execute("SELECT id FROM imagery_scene WHERE uri = ?", (str(uri),)).fetchone()
-            if existing:
-                continue
-
-            cur = conn.execute(
-                """
-                INSERT INTO imagery_scene (source, acquired_at, cloud_cover, footprint_geojson, uri, created_at)
-                VALUES (?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    payload.collection,
-                    str(acquired_at),
-                    float(cloud) if cloud is not None else None,
-                    json.dumps(footprint) if footprint is not None else None,
-                    str(uri) if uri is not None else None,
-                    now,
-                ),
+        all_footprints: list[dict[str, Any]] = []
+        total_fetched = 0
+        next_token = None
+        coverage_achieved = False
+        
+        print(f"\n{'='*60}")
+        print(f"STAC INGESTION - Coverage-Aware Mode")
+        print(f"{'='*60}")
+        print(f"Target coverage: {payload.min_coverage_percent}%")
+        print(f"Max items: {payload.max_items}")
+        
+        # Fetch scenes in batches until coverage is achieved or limit reached
+        while total_fetched < payload.max_items and not coverage_achieved:
+            batch_size = min(50, payload.max_items - total_fetched)
+            
+            search = _stac_search(
+                bbox=bbox,
+                collection=payload.collection,
+                max_items=batch_size,
+                cloud_cover_lte=payload.cloud_cover_lte,
+                next_token=next_token,
             )
-            scene_id = int(cur.lastrowid)
-            row = conn.execute(
-                "SELECT id, source, acquired_at, cloud_cover, footprint_geojson, uri, created_at FROM imagery_scene WHERE id = ?",
-                (scene_id,),
-            ).fetchone()
-            if row is None:
-                continue
-            created.append(
-                ImagerySceneOut(
-                    id=int(row["id"]),
-                    source=row["source"],
-                    acquired_at=row["acquired_at"],
-                    cloud_cover=float(row["cloud_cover"]) if row["cloud_cover"] is not None else None,
-                    footprint=json.loads(row["footprint_geojson"]) if row["footprint_geojson"] is not None else None,
-                    uri=row["uri"],
-                    created_at=row["created_at"],
+
+            features = search.get("features") or []
+            if not features:
+                print(f"  No more scenes available from STAC catalog")
+                break
+            
+            # Get next page token if available
+            links = search.get("links") or []
+            next_token = None
+            for link in links:
+                if link.get("rel") == "next":
+                    # Extract token from href or use the token field
+                    next_token = link.get("body", {}).get("token")
+                    break
+            
+            print(f"\nBatch: Fetched {len(features)} scenes...")
+            
+            for item in features:
+                props = item.get("properties") or {}
+                acquired_at = props.get("datetime") or props.get("start_datetime") or now
+                cloud = props.get("eo:cloud_cover")
+                uri = item.get("id")
+                footprint = item.get("geometry")
+
+                # Check if scene already exists to avoid duplicates
+                existing = conn.execute("SELECT id FROM imagery_scene WHERE uri = ?", (str(uri),)).fetchone()
+                if existing:
+                    # Still count footprint for coverage calculation
+                    if footprint:
+                        all_footprints.append(footprint)
+                    continue
+
+                cur = conn.execute(
+                    """
+                    INSERT INTO imagery_scene (source, acquired_at, cloud_cover, footprint_geojson, uri, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        payload.collection,
+                        str(acquired_at),
+                        float(cloud) if cloud is not None else None,
+                        json.dumps(footprint) if footprint is not None else None,
+                        str(uri) if uri is not None else None,
+                        now,
+                    ),
                 )
-            )
+                scene_id = int(cur.lastrowid)
+                row = conn.execute(
+                    "SELECT id, source, acquired_at, cloud_cover, footprint_geojson, uri, created_at FROM imagery_scene WHERE id = ?",
+                    (scene_id,),
+                ).fetchone()
+                if row is None:
+                    continue
+                
+                if footprint:
+                    all_footprints.append(footprint)
+                    
+                created.append(
+                    ImagerySceneOut(
+                        id=int(row["id"]),
+                        source=row["source"],
+                        acquired_at=row["acquired_at"],
+                        cloud_cover=float(row["cloud_cover"]) if row["cloud_cover"] is not None else None,
+                        footprint=json.loads(row["footprint_geojson"]) if row["footprint_geojson"] is not None else None,
+                        uri=row["uri"],
+                        created_at=row["created_at"],
+                    )
+                )
+            
+            total_fetched += len(features)
+            
+            # Check coverage if ensure_coverage is enabled
+            if payload.ensure_coverage and all_footprints:
+                coverage_percent, _ = _calculate_scenes_coverage(all_footprints, boundary)
+                print(f"  Current coverage: {coverage_percent:.1f}%")
+                
+                if coverage_percent >= payload.min_coverage_percent:
+                    coverage_achieved = True
+                    print(f"  ✓ Target coverage achieved!")
+            
+            # If no next page token, we've exhausted the catalog
+            if not next_token:
+                print(f"  Reached end of STAC catalog results")
+                break
+        
+        # Final coverage report
+        if all_footprints:
+            final_coverage, _ = _calculate_scenes_coverage(all_footprints, boundary)
+            print(f"\n{'='*60}")
+            print(f"INGESTION COMPLETE")
+            print(f"  Total scenes ingested: {len(created)}")
+            print(f"  Final boundary coverage: {final_coverage:.1f}%")
+            if final_coverage < payload.min_coverage_percent:
+                print(f"  ⚠️ WARNING: Coverage below target ({payload.min_coverage_percent}%)")
+                print(f"     Some parts of the boundary may not have imagery")
+            print(f"{'='*60}\n")
 
         conn.commit()
         return created

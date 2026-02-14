@@ -12,9 +12,19 @@ from backend.utils.spatial import (
     calculate_ndvi, calculate_ndwi, calculate_bsi, 
     clip_raster_to_geometry, vectorize_mask
 )
-from backend.utils.coverage_validator import validate_coverage, CoverageResult
+from backend.utils.coverage_validator import (
+    validate_coverage, 
+    CoverageResult,
+    validate_multi_scene_coverage,
+    get_raster_footprint
+)
 from backend.utils.index_generator import (
     generate_index, generate_change_preview, generate_all_indices, IndexResult
+)
+from backend.utils.mosaicking import (
+    create_band_mosaic_set,
+    check_mosaic_needed,
+    MosaicResult
 )
 
 from backend.alert_rules import Alert, Zone
@@ -29,6 +39,158 @@ class ImageryScene:
     uri: Optional[str]
 
 
+def _find_covering_scenes(
+    db_conn,
+    target_date: str,
+    boundary_geojson: dict,
+    min_coverage_percent: float = 95.0,
+    max_scenes: int = 4
+) -> List[Tuple[int, str]]:
+    """
+    Finds scenes from the database that together cover the boundary.
+    Returns scenes acquired on or near the target date.
+    
+    Args:
+        db_conn: SQLite database connection
+        target_date: Target acquisition date to match
+        boundary_geojson: GeoJSON of the boundary to cover
+        min_coverage_percent: Required coverage percentage
+        max_scenes: Maximum number of scenes to consider
+        
+    Returns:
+        List of (scene_id, scene_uri) tuples that provide coverage
+    """
+    from shapely.geometry import shape
+    from shapely.ops import unary_union
+    import json
+    from backend.utils.coverage_validator import extract_boundary_geometry
+    
+    # Get boundary as shapely geometry
+    boundary_geom = extract_boundary_geometry(boundary_geojson)
+    boundary_area = boundary_geom.area
+    
+    if boundary_area == 0:
+        return []
+    
+    # Get scenes ordered by proximity to target date
+    rows = db_conn.execute(
+        """
+        SELECT id, uri, footprint_geojson, acquired_at,
+               ABS(julianday(acquired_at) - julianday(?)) as date_diff
+        FROM imagery_scene
+        WHERE footprint_geojson IS NOT NULL
+        ORDER BY date_diff ASC
+        LIMIT ?
+        """,
+        (target_date, max_scenes * 3)  # Fetch more to have options
+    ).fetchall()
+    
+    if not rows:
+        return []
+    
+    selected_scenes = []
+    covered_geom = None
+    coverage_percent = 0.0
+    
+    for row in rows:
+        try:
+            footprint = json.loads(row["footprint_geojson"])
+            footprint_geom = extract_boundary_geometry(footprint)
+            
+            # Check if this scene intersects our boundary
+            if not boundary_geom.intersects(footprint_geom):
+                continue
+            
+            scene_contribution = boundary_geom.intersection(footprint_geom)
+            
+            if covered_geom is None:
+                # First scene
+                covered_geom = scene_contribution
+                selected_scenes.append((row["id"], row["uri"]))
+            else:
+                # Check if this scene adds new coverage
+                new_coverage = scene_contribution.difference(covered_geom)
+                if not new_coverage.is_empty and new_coverage.area > 0:
+                    covered_geom = unary_union([covered_geom, scene_contribution])
+                    selected_scenes.append((row["id"], row["uri"]))
+            
+            # Calculate current coverage
+            coverage_percent = (covered_geom.area / boundary_area) * 100.0
+            
+            if coverage_percent >= min_coverage_percent:
+                break
+            
+            if len(selected_scenes) >= max_scenes:
+                break
+                
+        except Exception as e:
+            print(f"  ⚠️ Error processing scene {row['id']}: {e}")
+            continue
+    
+    print(f"  Found {len(selected_scenes)} scene(s) providing {coverage_percent:.1f}% coverage")
+    return selected_scenes
+
+
+def _download_and_mosaic_bands(
+    scene_uris: List[str],
+    required_bands: List[str],
+    boundary_geojson: dict,
+    output_prefix: str
+) -> Dict[str, str]:
+    """
+    Downloads bands from multiple scenes and creates mosaics if needed.
+    
+    Args:
+        scene_uris: List of STAC item URIs to download from
+        required_bands: List of band names to download
+        boundary_geojson: Boundary for clipping
+        output_prefix: Prefix for mosaic output files
+        
+    Returns:
+        Dict mapping band names to file paths (either single files or mosaics)
+    """
+    if len(scene_uris) == 1:
+        # Single scene - just download normally
+        result = download_sentinel2_bands_with_validation(
+            scene_uris[0],
+            required_bands,
+            boundary_geojson=boundary_geojson,
+            min_coverage_percent=80.0
+        )
+        return result.paths
+    
+    # Multiple scenes - download all and mosaic
+    print(f"  Downloading bands from {len(scene_uris)} scenes for mosaicking...")
+    
+    # Collect paths by band
+    band_paths: Dict[str, List[str]] = {band: [] for band in required_bands}
+    
+    for uri in scene_uris:
+        paths = download_sentinel2_bands(uri, required_bands)
+        for band, path in paths.items():
+            band_paths[band].append(path)
+    
+    # Create mosaics for each band
+    print(f"  Creating mosaics for {len(required_bands)} bands...")
+    mosaic_results = create_band_mosaic_set(
+        band_paths,
+        output_prefix,
+        boundary_geojson=boundary_geojson
+    )
+    
+    # Return paths to mosaic files (or original if mosaic failed)
+    output_paths = {}
+    for band, result in mosaic_results.items():
+        if result.success and result.output_path:
+            output_paths[band] = result.output_path
+        else:
+            # Fallback to first scene's band if mosaic failed
+            output_paths[band] = band_paths[band][0]
+            print(f"  ⚠️ Mosaic failed for {band}, using first scene")
+    
+    return output_paths
+
+
 def run_analysis(
     *,
     mine_area: Optional[dict[str, Any]],
@@ -38,9 +200,11 @@ def run_analysis(
     latest_scene: Optional[ImageryScene] = None,
     run_id: Optional[int] = None,
     save_indices: bool = True,
+    db_conn = None,
 ) -> tuple[list[Zone], list[Alert]]:
     """
     Runs the full analysis pipeline with coverage validation and index generation.
+    Automatically mosaics multiple scenes when a single scene doesn't cover the full boundary.
     
     Args:
         mine_area: Mine area configuration with boundary
@@ -50,6 +214,7 @@ def run_analysis(
         latest_scene: Latest imagery scene
         run_id: Analysis run ID for saving outputs
         save_indices: Whether to save index GeoTIFFs and previews
+        db_conn: Optional database connection for finding additional scenes
     
     Returns:
         Tuple of (zones, alerts)
@@ -85,32 +250,88 @@ def run_analysis(
         if not geometry:
             raise ValueError("No boundary geometry found in mine_area")
 
-        # 2. Download bands with coverage validation
+        # 2. Download bands with coverage validation and multi-scene support
         print(f"\n--- STAGE 1: Download & Coverage Validation ---")
         
+        # First, try downloading the primary baseline scene
         print(f"\nDownloading baseline scene bands...")
         baseline_result = download_sentinel2_bands_with_validation(
             baseline_scene.uri, 
             required_bands,
             boundary_geojson=geometry,
-            min_coverage_percent=80.0
+            min_coverage_percent=90.0  # Higher threshold to trigger mosaicking
         )
         baseline_paths = baseline_result.paths
         
-        if not baseline_result.coverage_valid:
+        # Check if we need additional scenes for baseline (coverage < 90%)
+        if not baseline_result.coverage_valid and db_conn is not None:
+            print(f"  ⚠️ Baseline coverage insufficient ({baseline_result.coverage_percent:.1f}%)")
+            print(f"  → Searching for additional scenes to complete coverage...")
+            
+            # Find additional scenes that can provide full coverage
+            covering_scenes = _find_covering_scenes(
+                db_conn,
+                baseline_scene.acquired_at,
+                geometry,
+                min_coverage_percent=95.0,
+                max_scenes=4
+            )
+            
+            if len(covering_scenes) > 1:
+                # Multiple scenes needed - use mosaicking
+                scene_uris = [uri for _, uri in covering_scenes]
+                baseline_paths = _download_and_mosaic_bands(
+                    scene_uris,
+                    required_bands,
+                    geometry,
+                    output_prefix=f"run{run_id}_baseline" if run_id else "baseline"
+                )
+                print(f"  ✓ Created baseline mosaic from {len(scene_uris)} scenes")
+            else:
+                print(f"  ⚠️ No additional scenes found - proceeding with partial coverage")
+        elif not baseline_result.coverage_valid:
             print(f"  ⚠️ Baseline coverage warning: {baseline_result.message}")
+            print(f"     (No database connection provided to search for additional scenes)")
         
+        # First, try downloading the primary latest scene
         print(f"\nDownloading latest scene bands...")
         latest_result = download_sentinel2_bands_with_validation(
             latest_scene.uri, 
             required_bands,
             boundary_geojson=geometry,
-            min_coverage_percent=80.0
+            min_coverage_percent=90.0  # Higher threshold to trigger mosaicking
         )
         latest_paths = latest_result.paths
         
-        if not latest_result.coverage_valid:
+        # Check if we need additional scenes for latest (coverage < 90%)
+        if not latest_result.coverage_valid and db_conn is not None:
+            print(f"  ⚠️ Latest coverage insufficient ({latest_result.coverage_percent:.1f}%)")
+            print(f"  → Searching for additional scenes to complete coverage...")
+            
+            # Find additional scenes that can provide full coverage
+            covering_scenes = _find_covering_scenes(
+                db_conn,
+                latest_scene.acquired_at,
+                geometry,
+                min_coverage_percent=95.0,
+                max_scenes=4
+            )
+            
+            if len(covering_scenes) > 1:
+                # Multiple scenes needed - use mosaicking
+                scene_uris = [uri for _, uri in covering_scenes]
+                latest_paths = _download_and_mosaic_bands(
+                    scene_uris,
+                    required_bands,
+                    geometry,
+                    output_prefix=f"run{run_id}_latest" if run_id else "latest"
+                )
+                print(f"  ✓ Created latest mosaic from {len(scene_uris)} scenes")
+            else:
+                print(f"  ⚠️ No additional scenes found - proceeding with partial coverage")
+        elif not latest_result.coverage_valid:
             print(f"  ⚠️ Latest coverage warning: {latest_result.message}")
+            print(f"     (No database connection provided to search for additional scenes)")
 
         # 3. Process Baseline
         print(f"\n--- STAGE 2: Clip & Resample ---")
