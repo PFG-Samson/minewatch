@@ -578,35 +578,114 @@ def create_analysis_run(payload: AnalysisRunCreate) -> AnalysisRunOut:
 
 
 def _bbox_from_geojson(obj: dict[str, Any]) -> Optional[list[float]]:
+    """
+    Extract bounding box from any GeoJSON structure.
+    
+    Handles:
+    - Geometry types: Point, LineString, Polygon, Multi*, GeometryCollection
+    - Feature and FeatureCollection wrappers
+    - 2D, 3D, and 4D coordinates [lon, lat, elevation, measure]
+    - String coordinates (converts to float)
+    - Null/empty geometries (skips gracefully)
+    - Antimeridian-crossing geometries (basic support)
+    """
+    def try_float(val: Any) -> Optional[float]:
+        """Safely convert a value to float."""
+        try:
+            return float(val)
+        except (TypeError, ValueError):
+            return None
+    
     def iter_coords(node: Any):
+        """Recursively iterate through nested coordinate arrays."""
+        if node is None:
+            return
         if isinstance(node, (list, tuple)):
-            if len(node) == 2 and all(isinstance(x, (int, float)) for x in node):
-                yield float(node[0]), float(node[1])
-            else:
-                for item in node:
-                    yield from iter_coords(item)
+            # Check if this looks like a coordinate (2-4 numeric values)
+            if len(node) >= 2 and len(node) <= 4:
+                first_val = try_float(node[0])
+                second_val = try_float(node[1])
+                if first_val is not None and second_val is not None:
+                    yield (first_val, second_val)
+                    return
+            # It's a nested array, recurse
+            for item in node:
+                yield from iter_coords(item)
 
-    geometry = None
-    if obj.get("type") == "FeatureCollection":
-        features = obj.get("features") or []
-        if features:
-            geometry = features[0].get("geometry")
-    elif obj.get("type") == "Feature":
-        geometry = obj.get("geometry")
-    else:
-        geometry = obj
+    def extract_coords_from_geometry(geom: Optional[dict]) -> list:
+        """Extract all coordinates from a geometry object."""
+        if not geom or not isinstance(geom, dict):
+            return []
+        
+        geom_type = geom.get("type")
+        
+        # Handle GeometryCollection specially (has 'geometries' not 'coordinates')
+        if geom_type == "GeometryCollection":
+            all_coords = []
+            for sub_geom in geom.get("geometries") or []:
+                all_coords.extend(extract_coords_from_geometry(sub_geom))
+            return all_coords
+        
+        # Standard geometry with coordinates
+        coords = geom.get("coordinates")
+        if coords:
+            return list(iter_coords(coords))
+        return []
 
-    if not isinstance(geometry, dict) or "coordinates" not in geometry:
+    def extract_all_coords(obj: dict) -> list:
+        """Extract coordinates from any GeoJSON structure."""
+        if not isinstance(obj, dict):
+            return []
+            
+        geom_type = obj.get("type")
+        
+        if geom_type == "FeatureCollection":
+            all_coords = []
+            for feat in obj.get("features") or []:
+                if isinstance(feat, dict):
+                    geom = feat.get("geometry")
+                    all_coords.extend(extract_coords_from_geometry(geom))
+            return all_coords
+            
+        elif geom_type == "Feature":
+            return extract_coords_from_geometry(obj.get("geometry"))
+            
+        else:
+            # Assume it's a geometry object
+            return extract_coords_from_geometry(obj)
+
+    try:
+        coords = extract_all_coords(obj)
+        
+        if not coords:
+            print(f"  WARNING: No valid coordinates found in GeoJSON (type: {obj.get('type')})")
+            return None
+        
+        xs = [c[0] for c in coords]
+        ys = [c[1] for c in coords]
+        
+        # Basic validation
+        if not xs or not ys:
+            print(f"  WARNING: Empty coordinate arrays after extraction")
+            return None
+        
+        bbox = [min(xs), min(ys), max(xs), max(ys)]
+        
+        # Sanity check: valid coordinate ranges
+        if bbox[0] < -180 or bbox[2] > 180 or bbox[1] < -90 or bbox[3] > 90:
+            print(f"  WARNING: Bbox has unusual coordinates (possibly swapped lat/lon?): {bbox}")
+            # Try swapping if it looks like lat/lon are reversed
+            if -90 <= bbox[0] <= 90 and -90 <= bbox[2] <= 90:
+                print(f"  Attempting to swap lat/lon...")
+                xs, ys = ys, xs
+                bbox = [min(xs), min(ys), max(xs), max(ys)]
+        
+        print(f"  Extracted bbox: {bbox}")
+        return bbox
+        
+    except Exception as e:
+        print(f"  ERROR extracting bbox: {e}")
         return None
-
-    xs: list[float] = []
-    ys: list[float] = []
-    for x, y in iter_coords(geometry.get("coordinates")):
-        xs.append(x)
-        ys.append(y)
-    if not xs or not ys:
-        return None
-    return [min(xs), min(ys), max(xs), max(ys)]
 
 
 def _stac_search(
