@@ -302,7 +302,6 @@ def get_run_imagery(run_id: int) -> dict[str, Any]:
                 return None
             
             uri = scene["uri"]
-            # These paths assume the downloader has already run
             base_dir = Path(__file__).parent / "data" / "imagery"
             red = base_dir / f"{uri}_B04.tif"
             green = base_dir / f"{uri}_B03.tif"
@@ -310,6 +309,13 @@ def get_run_imagery(run_id: int) -> dict[str, Any]:
             
             if red.exists() and green.exists() and blue.exists():
                 return generate_rgb_png(str(red), str(green), str(blue), f"preview_{uri}")
+            mosaic_dir = Path(__file__).parent / "data" / "mosaics"
+            m_prefix = f"run{run_id}_{label.lower()}"
+            m_red = mosaic_dir / f"{m_prefix}_B04_clipped.tif"
+            m_green = mosaic_dir / f"{m_prefix}_B03_clipped.tif"
+            m_blue = mosaic_dir / f"{m_prefix}_B02_clipped.tif"
+            if m_red.exists() and m_green.exists() and m_blue.exists():
+                return generate_rgb_png(str(m_red), str(m_green), str(m_blue), f"preview_{m_prefix}")
             return None
 
         return {
@@ -1324,6 +1330,64 @@ def get_latest_imagery_scene() -> ImagerySceneOut:
             uri=row["uri"],
             created_at=row["created_at"],
         )
+    finally:
+        conn.close()
+
+
+@app.get("/imagery/latest/preview")
+def get_latest_imagery_preview() -> dict[str, Any]:
+    """
+    Returns an RGB preview for the latest imagery scene.
+    Generates the preview from downloaded bands if not already cached.
+    This endpoint works independently of analysis runs.
+    """
+    conn = get_db()
+    try:
+        row = conn.execute(
+            """
+            SELECT uri, footprint_geojson
+            FROM imagery_scene
+            WHERE uri IS NOT NULL
+            ORDER BY acquired_at DESC
+            LIMIT 1
+            """
+        ).fetchone()
+
+        if row is None:
+            raise HTTPException(status_code=404, detail="No imagery scenes available")
+
+        uri = row["uri"]
+        base_dir = Path(__file__).parent / "data" / "imagery"
+        
+        # Check for RGB bands (B04=Red, B03=Green, B02=Blue)
+        red = base_dir / f"{uri}_B04.tif"
+        green = base_dir / f"{uri}_B03.tif"
+        blue = base_dir / f"{uri}_B02.tif"
+
+        if not (red.exists() and green.exists() and blue.exists()):
+            # Bands not downloaded yet - return null preview with helpful message
+            return {
+                "preview": None,
+                "message": "RGB bands not yet downloaded. Run an analysis or STAC ingest to download imagery.",
+                "bands_available": {
+                    "B02": blue.exists(),
+                    "B03": green.exists(),
+                    "B04": red.exists()
+                }
+            }
+
+        # Generate RGB preview
+        preview_data = generate_rgb_png(
+            str(red), str(green), str(blue), 
+            f"latest_preview_{uri}",
+            brightness=2.5
+        )
+
+        return {
+            "preview": preview_data,
+            "uri": uri,
+            "footprint": json.loads(row["footprint_geojson"]) if row["footprint_geojson"] else None
+        }
     finally:
         conn.close()
 

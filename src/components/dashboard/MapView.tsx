@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+ import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { getAnalysisRun, getRunImagery, type GeoJsonFeatureCollection, type RunImageryDto } from '@/lib/api';
+ import { getAnalysisRun, getRunImagery, getLatestImageryPreview, type GeoJsonFeatureCollection, type RunImageryDto, type LatestImageryPreviewDto } from '@/lib/api';
 
 // Default map center if no boundary is provided
 const DEFAULT_CENTER: [number, number] = [0, 0];
@@ -38,6 +38,7 @@ export function MapView({
   const mapInstanceRef = useRef<L.Map | null>(null);
   const [zones, setZones] = useState<GeoJsonFeatureCollection | null>(null);
   const [imagery, setImagery] = useState<RunImageryDto | null>(null);
+  const [latestPreview, setLatestPreview] = useState<LatestImageryPreviewDto | null>(null);
   const lastBoundaryKeyRef = useRef<string | null>(null);
   const layersRef = useRef<{
     boundary?: L.Layer;
@@ -47,6 +48,7 @@ export function MapView({
     zonesLayer?: L.GeoJSON;
     baselineImagery?: L.ImageOverlay;
     latestImagery?: L.ImageOverlay;
+    latestPreviewImagery?: L.ImageOverlay;
     highlighted?: L.GeoJSON;
   }>({});
 
@@ -57,6 +59,15 @@ export function MapView({
       if (!runId) {
         setZones(null);
         setImagery(null);
+        try {
+          const preview = await getLatestImageryPreview();
+          if (!cancelled) {
+            setLatestPreview(preview);
+          }
+        } catch (e) {
+          // Silent fallback if preview not available
+          if (!cancelled) setLatestPreview(null);
+        }
         return;
       }
 
@@ -69,8 +80,29 @@ export function MapView({
         if (cancelled) return;
         setZones(analysisData.zones);
         setImagery(imageryData);
+        if ((!imageryData?.latest && !imageryData?.baseline)) {
+          try {
+            const preview = await getLatestImageryPreview();
+            if (!cancelled) {
+              setLatestPreview(preview);
+            }
+          } catch {
+            if (!cancelled) setLatestPreview(null);
+          }
+        } else {
+          setLatestPreview(null);
+        }
       } catch (e) {
         console.error("Failed to load map data", e);
+        // Try preview even if run data failed
+        try {
+          const preview = await getLatestImageryPreview();
+          if (!cancelled) {
+            setLatestPreview(preview);
+          }
+        } catch {
+          if (!cancelled) setLatestPreview(null);
+        }
       }
     };
 
@@ -94,6 +126,10 @@ export function MapView({
       map.removeLayer(layersRef.current.latestImagery);
       layersRef.current.latestImagery = undefined;
     }
+    if (layersRef.current.latestPreviewImagery) {
+      map.removeLayer(layersRef.current.latestPreviewImagery);
+      layersRef.current.latestPreviewImagery = undefined;
+    }
 
     if (imagery?.baseline && showImagery) {
       const { url, bounds } = imagery.baseline;
@@ -110,7 +146,14 @@ export function MapView({
         [bounds[2], bounds[3]]
       ], { opacity: 1.0 }).addTo(map);
     }
-  }, [imagery, showImagery]);
+    if (!imagery?.latest && !imagery?.baseline && latestPreview?.preview && showImagery) {
+      const { url, bounds } = latestPreview.preview;
+      layersRef.current.latestPreviewImagery = L.imageOverlay(`http://localhost:8000${url}`, [
+        [bounds[0], bounds[1]],
+        [bounds[2], bounds[3]]
+      ], { opacity: 1.0 }).addTo(map);
+    }
+  }, [imagery, latestPreview, showImagery]);
 
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;

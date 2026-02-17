@@ -252,19 +252,21 @@ def _find_covering_scenes(
     
     for row in rows:
         try:
+            row_dict = {k: row[k] for k in row.keys()}
+            
             # Check date tolerance
-            date_diff = row["date_diff"]
+            date_diff = row_dict["date_diff"]
             if date_diff > max_date_diff_days:
-                print(f"  ⚠️ Skipping scene {row['uri']} - {date_diff:.0f} days from target (max: {max_date_diff_days:.0f})")
+                print(f"  ⚠️ Skipping scene {row_dict['uri']} - {date_diff:.0f} days from target (max: {max_date_diff_days:.0f})")
                 continue
             
             # Check cloud cover
-            cloud_cover = row.get("cloud_cover")
+            cloud_cover = row_dict.get("cloud_cover")
             if cloud_cover and cloud_cover > SCENE_CONFIG["MAX_CLOUD_COVER"]:
-                print(f"  ⚠️ Skipping scene {row['uri']} - cloud cover {cloud_cover:.1f}% (max: {SCENE_CONFIG['MAX_CLOUD_COVER']:.1f}%)")
+                print(f"  ⚠️ Skipping scene {row_dict['uri']} - cloud cover {cloud_cover:.1f}% (max: {SCENE_CONFIG['MAX_CLOUD_COVER']:.1f}%)")
                 continue
             
-            footprint = json.loads(row["footprint_geojson"])
+            footprint = json.loads(row_dict["footprint_geojson"])
             footprint_geom = extract_boundary_geometry(footprint)
             
             # Check if this scene intersects our boundary
@@ -276,13 +278,13 @@ def _find_covering_scenes(
             if covered_geom is None:
                 # First scene
                 covered_geom = scene_contribution
-                selected_scenes.append((row["id"], row["uri"]))
+                selected_scenes.append((row_dict["id"], row_dict["uri"]))
             else:
                 # Check if this scene adds new coverage
                 new_coverage = scene_contribution.difference(covered_geom)
                 if not new_coverage.is_empty and new_coverage.area > 0:
                     covered_geom = unary_union([covered_geom, scene_contribution])
-                    selected_scenes.append((row["id"], row["uri"]))
+                    selected_scenes.append((row_dict["id"], row_dict["uri"]))
             
             # Calculate current coverage
             coverage_percent = (covered_geom.area / boundary_area) * 100.0
@@ -294,7 +296,11 @@ def _find_covering_scenes(
                 break
                 
         except Exception as e:
-            print(f"  ⚠️ Error processing scene {row['id']}: {e}")
+            try:
+                scene_id = row["id"]
+            except Exception:
+                scene_id = "unknown"
+            print(f"  ⚠️ Error processing scene {scene_id}: {e}")
             continue
     
     print(f"  Found {len(selected_scenes)} scene(s) providing {coverage_percent:.1f}% coverage")
@@ -386,392 +392,248 @@ def run_analysis(
     db_conn = None,
 ) -> tuple[list[Zone], list[Alert]]:
     """
-    Runs the full analysis pipeline with coverage validation and index generation.
-    Automatically mosaics multiple scenes when a single scene doesn't cover the full boundary.
-    
-    Args:
-        mine_area: Mine area configuration with boundary
-        baseline_date: Date string for baseline
-        latest_date: Date string for latest
-        baseline_scene: Baseline imagery scene
-        latest_scene: Latest imagery scene
-        run_id: Analysis run ID for saving outputs
-        save_indices: Whether to save index GeoTIFFs and previews
-        db_conn: Database connection for finding additional scenes (REQUIRED in production)
-    
-    Returns:
-        Tuple of (zones, alerts)
-        
-    Raises:
-        DatabaseConnectionError: If db_conn is None and REQUIRE_DB_CONN is True
-        IdenticalScenesError: If baseline and latest scenes are the same
-        InsufficientCoverageError: If coverage is below minimum threshold
-        AnalysisError: For other unrecoverable errors
+    Production wrapper around run_analysis_core.
+    Validates DB requirement and delegates scientific processing to run_analysis_core.
     """
-    # PHASE 1: Early Validation
-    print(f"\n{'='*60}")
-    print(f"ANALYSIS PIPELINE - Validation")
-    print(f"{'='*60}")
-    
-    # Require database connection for production
     if VALIDATION_CONFIG["REQUIRE_DB_CONN"] and db_conn is None:
         raise DatabaseConnectionError(
             "Database connection required for production analysis. "
             "Set VALIDATION_CONFIG['REQUIRE_DB_CONN'] = False for testing only."
         )
-    
-    # Check for required data
-    if baseline_scene is None or latest_scene is None or mine_area is None:
-        raise AnalysisError(
-            "Insufficient data for analysis",
-            stage="validation",
-            run_id=run_id
-        )
-    
-    # CRITICAL: Check for identical scenes EARLY (before any processing)
+    if mine_area is None:
+        raise AnalysisError("Mine area configuration is required for analysis", stage="initialization", run_id=run_id)
+    if baseline_scene is None or latest_scene is None:
+        raise AnalysisError("Both baseline and latest scenes are required", stage="initialization", run_id=run_id)
     if baseline_scene.uri == latest_scene.uri:
-        raise IdenticalScenesError(
-            scene_uri=baseline_scene.uri,
-            acquired_at=baseline_scene.acquired_at
-        )
+        raise IdenticalScenesError(scene_uri=baseline_scene.uri, acquired_at=baseline_scene.acquired_at)
 
-    print(f"  ✓ Validation passed")
-    print(f"  Baseline: {baseline_scene.uri}")
-    print(f"  Latest: {latest_scene.uri}")
-    
-    try:
-        # 1. Prepare required bands
-        # NDVI: Red (B04), NIR (B08)
-        # NDWI: Green (B03), NIR (B08)
-        # BSI: Red (B04), Blue (B02), NIR (B08), SWIR1 (B11)
+    # Build candidate scenes from DB for epoch grouping
+    candidates: List[Dict[str, Any]] = []
+    if db_conn is not None:
+        rows = db_conn.execute(
+            "SELECT id, uri, acquired_at, cloud_cover, footprint_geojson FROM imagery_scene ORDER BY acquired_at DESC LIMIT 50"
+        ).fetchall()
+        for r in rows:
+            row_dict = {k: r[k] for k in r.keys()}
+            candidates.append(
+                {
+                    "id": int(row_dict["id"]),
+                    "uri": row_dict["uri"],
+                    "acquired_at": row_dict["acquired_at"],
+                    "cloud_cover": float(row_dict["cloud_cover"]) if row_dict["cloud_cover"] is not None else None,
+                    "footprint_geojson": row_dict["footprint_geojson"],
+                }
+            )
+
+    result = run_analysis_core(
+        mine_area=mine_area,
+        baseline_scene=baseline_scene,
+        latest_scene=latest_scene,
+        candidate_scenes=candidates,
+        save_indices=save_indices,
+        run_id=run_id,
+    )
+    zones: list[Zone] = result["zones"]
+    alerts: list[Alert] = result["alerts"]
+    return zones, alerts
+
+
+def run_analysis_core(
+    *,
+    mine_area: dict[str, Any],
+    baseline_scene: Optional[ImageryScene] = None,
+    latest_scene: Optional[ImageryScene] = None,
+    candidate_scenes: Optional[List[Dict[str, Any]]] = None,
+    required_bands: Optional[List[str]] = None,
+    epoch_tolerance_minutes: float = 10.0,
+    min_epoch_coverage_percent: float = 80.0,
+    save_indices: bool = True,
+    run_id: Optional[int] = None,
+) -> Dict[str, Any]:
+    """
+    Pure processing function for scientific analysis (no DB access, no side effects beyond optional previews).
+    Performs epoch selection, download/mosaic, clipping/resampling, index calculation, and change detection.
+    Returns a structured result with zones, alerts, stats, metadata, and epoch_info.
+    """
+    if required_bands is None:
         required_bands = ["B02", "B03", "B04", "B08", "B11"]
-        
-        print(f"\n{'='*60}")
-        print(f"ANALYSIS PIPELINE - {mine_area.get('name', 'Mine')}")
-        print(f"{'='*60}")
-        if run_id:
-            print(f"Run ID: {run_id}")
-        print(f"Required bands: {', '.join(required_bands)}")
-        
-        geometry = mine_area.get("boundary")
-        if not geometry:
-            raise AnalysisError(
-                "No boundary geometry found in mine_area",
-                stage="initialization",
-                run_id=run_id
+    geometry = mine_area.get("boundary")
+    if not geometry:
+        raise AnalysisError("No boundary geometry found in mine_area", stage="initialization", run_id=run_id)
+
+    if baseline_scene and latest_scene and baseline_scene.uri == latest_scene.uri:
+        raise IdenticalScenesError(scene_uri=baseline_scene.uri, acquired_at=baseline_scene.acquired_at)
+
+    # Decide single-scene vs epoch-based path
+    baseline_paths: Dict[str, str] = {}
+    latest_paths: Dict[str, str] = {}
+    epoch_info: Dict[str, Any] = {}
+
+    def footprint_coverage_for_uri(uri: str) -> float:
+        try:
+            from backend.utils.stac_downloader import get_scene_footprint
+            fp = get_scene_footprint(uri)
+            if not fp:
+                return 0.0
+            boundary_geom = extract_boundary_geometry(geometry)
+            footprint_geom = extract_boundary_geometry(fp)
+            if not boundary_geom.intersects(footprint_geom):
+                return 0.0
+            intersection = boundary_geom.intersection(footprint_geom)
+            return (intersection.area / boundary_geom.area) * 100.0
+        except Exception:
+            return 0.0
+
+    baseline_cov = footprint_coverage_for_uri(baseline_scene.uri) if baseline_scene else 0.0
+    latest_cov = footprint_coverage_for_uri(latest_scene.uri) if latest_scene else 0.0
+
+    needs_epoch = (baseline_cov < 92.0) or (latest_cov < 92.0)
+
+    print(f"\n=== CORE ANALYSIS ===")
+    print(f"Boundary present: {geometry is not None}")
+    print(f"Baseline URI: {baseline_scene.uri if baseline_scene else 'None'} (cov ~ {baseline_cov:.1f}%)")
+    print(f"Latest URI:   {latest_scene.uri if latest_scene else 'None'} (cov ~ {latest_cov:.1f}%)")
+
+    if needs_epoch:
+        print(f"\n[Stage 1] Epoch Selection & Mosaicking")
+        from backend.utils.temporal_grouping import build_coverage_sets_from_candidates, select_latest_two_sets
+        if not candidate_scenes or len(candidate_scenes) == 0:
+            raise InsufficientCoverageError(
+                "Insufficient data to build temporal epochs (no candidate scenes provided)",
+                coverage_percent=max(baseline_cov, latest_cov),
+                required_percent=95.0,
+                scene_count=0
             )
-
-        # 2. Download bands with coverage validation and multi-scene support
-        print(f"\n--- STAGE 1: Coverage Check & Download ---")
-        
-        # Check footprint coverage BEFORE downloading (uses actual data extent from STAC)
-        # This is more accurate than post-download bounds checking
-        baseline_footprint_coverage = 0.0
-        latest_footprint_coverage = 0.0
-        
-        if db_conn is not None:
-            print(f"\nChecking scene footprint coverage...")
-            baseline_footprint_coverage = _check_scene_footprint_coverage(
-                db_conn, baseline_scene.uri, geometry
+        coverage_sets = build_coverage_sets_from_candidates(geometry, candidate_scenes)
+        if len(coverage_sets) < 2:
+            raise InsufficientCoverageError(
+                "Insufficient complete temporal coverage sets",
+                coverage_percent=max(baseline_cov, latest_cov),
+                required_percent=95.0,
+                scene_count=len(coverage_sets)
             )
-            latest_footprint_coverage = _check_scene_footprint_coverage(
-                db_conn, latest_scene.uri, geometry
-            )
-            print(f"  Baseline scene footprint coverage: {baseline_footprint_coverage:.1f}%")
-            print(f"  Latest scene footprint coverage: {latest_footprint_coverage:.1f}%")
-        
-        # Determine if we need multiple scenes for baseline
-        baseline_needs_mosaic = baseline_footprint_coverage < COVERAGE_CONFIG["MOSAIC_THRESHOLD"]
-        
-        if baseline_needs_mosaic and db_conn is None:
-            # Can't mosaic without database
-            if VALIDATION_CONFIG["FAIL_ON_INSUFFICIENT_COVERAGE"]:
-                raise InsufficientCoverageError(
-                    f"Baseline scene has insufficient coverage and no database connection for mosaicking",
-                    coverage_percent=baseline_footprint_coverage,
-                    required_percent=COVERAGE_CONFIG["MINIMUM_REQUIRED"],
-                    scene_count=1
-                )
-            else:
-                print(f"  ⚠️ WARNING: Baseline coverage {baseline_footprint_coverage:.1f}% below threshold")
-        
-        if baseline_needs_mosaic and db_conn is not None:
-            print(f"\n⚠️ Baseline coverage insufficient ({baseline_footprint_coverage:.1f}%)")
-            print(f"  → Searching for additional scenes to complete coverage...")
-            
-            covering_scenes = _find_covering_scenes(
-                db_conn,
-                baseline_scene.acquired_at,
-                geometry,
-                min_coverage_percent=95.0,
-                max_scenes=4
-            )
-            
-            if len(covering_scenes) > 1:
-                scene_uris = [uri for _, uri in covering_scenes]
-                print(f"  Downloading and mosaicking {len(scene_uris)} scenes for baseline...")
-                baseline_paths = _download_and_mosaic_bands(
-                    scene_uris,
-                    required_bands,
-                    geometry,
-                    output_prefix=f"run{run_id}_baseline" if run_id else "baseline"
-                )
-                print(f"  ✓ Created baseline mosaic from {len(scene_uris)} scenes")
-            else:
-                print(f"  ⚠️ Only 1 scene available - validating single scene coverage...")
-                
-                # Check if single scene meets minimum requirements
-                if baseline_footprint_coverage < COVERAGE_CONFIG["MINIMUM_REQUIRED"]:
-                    if VALIDATION_CONFIG["FAIL_ON_INSUFFICIENT_COVERAGE"]:
-                        raise InsufficientCoverageError(
-                            f"Single baseline scene provides insufficient coverage",
-                            coverage_percent=baseline_footprint_coverage,
-                            required_percent=COVERAGE_CONFIG["MINIMUM_REQUIRED"],
-                            scene_count=1,
-                            metadata={
-                                "scene_uri": baseline_scene.uri,
-                                "acquired_at": baseline_scene.acquired_at
-                            }
-                        )
-                    else:
-                        print(f"  ⚠️ WARNING: Single scene coverage {baseline_footprint_coverage:.1f}% below minimum")
-                
-                baseline_result = download_sentinel2_bands_with_validation(
-                    baseline_scene.uri, required_bands,
-                    boundary_geojson=geometry, min_coverage_percent=COVERAGE_CONFIG["DOWNLOAD_MINIMUM"]
-                )
-                baseline_paths = baseline_result.paths
-        else:
-            print(f"\nDownloading baseline scene bands...")
-            baseline_result = download_sentinel2_bands_with_validation(
-                baseline_scene.uri, required_bands,
-                boundary_geojson=geometry, min_coverage_percent=COVERAGE_CONFIG["DOWNLOAD_MINIMUM"]
-            )
-            baseline_paths = baseline_result.paths
-            if baseline_footprint_coverage >= COVERAGE_CONFIG["MOSAIC_THRESHOLD"]:
-                print(f"  ✓ Single scene provides {baseline_footprint_coverage:.1f}% coverage")
-        
-        # Determine if we need multiple scenes for latest
-        latest_needs_mosaic = latest_footprint_coverage < COVERAGE_CONFIG["MOSAIC_THRESHOLD"]
-        
-        if latest_needs_mosaic and db_conn is None:
-            # Can't mosaic without database
-            if VALIDATION_CONFIG["FAIL_ON_INSUFFICIENT_COVERAGE"]:
-                raise InsufficientCoverageError(
-                    f"Latest scene has insufficient coverage and no database connection for mosaicking",
-                    coverage_percent=latest_footprint_coverage,
-                    required_percent=COVERAGE_CONFIG["MINIMUM_REQUIRED"],
-                    scene_count=1
-                )
-            else:
-                print(f"  ⚠️ WARNING: Latest coverage {latest_footprint_coverage:.1f}% below threshold")
-        
-        if latest_needs_mosaic and db_conn is not None:
-            print(f"\n⚠️ Latest coverage insufficient ({latest_footprint_coverage:.1f}%)")
-            print(f"  → Searching for additional scenes to complete coverage...")
-            
-            covering_scenes = _find_covering_scenes(
-                db_conn,
-                latest_scene.acquired_at,
-                geometry,
-                min_coverage_percent=95.0,
-                max_scenes=4
-            )
-            
-            if len(covering_scenes) > 1:
-                scene_uris = [uri for _, uri in covering_scenes]
-                print(f"  Downloading and mosaicking {len(scene_uris)} scenes for latest...")
-                latest_paths = _download_and_mosaic_bands(
-                    scene_uris,
-                    required_bands,
-                    geometry,
-                    output_prefix=f"run{run_id}_latest" if run_id else "latest"
-                )
-                print(f"  ✓ Created latest mosaic from {len(scene_uris)} scenes")
-            else:
-                print(f"  ⚠️ Only 1 scene available - validating single scene coverage...")
-                
-                # Check if single scene meets minimum requirements
-                if latest_footprint_coverage < COVERAGE_CONFIG["MINIMUM_REQUIRED"]:
-                    if VALIDATION_CONFIG["FAIL_ON_INSUFFICIENT_COVERAGE"]:
-                        raise InsufficientCoverageError(
-                            f"Single latest scene provides insufficient coverage",
-                            coverage_percent=latest_footprint_coverage,
-                            required_percent=COVERAGE_CONFIG["MINIMUM_REQUIRED"],
-                            scene_count=1,
-                            metadata={
-                                "scene_uri": latest_scene.uri,
-                                "acquired_at": latest_scene.acquired_at
-                            }
-                        )
-                    else:
-                        print(f"  ⚠️ WARNING: Single scene coverage {latest_footprint_coverage:.1f}% below minimum")
-                
-                latest_result = download_sentinel2_bands_with_validation(
-                    latest_scene.uri, required_bands,
-                    boundary_geojson=geometry, min_coverage_percent=COVERAGE_CONFIG["DOWNLOAD_MINIMUM"]
-                )
-                latest_paths = latest_result.paths
-        else:
-            print(f"\nDownloading latest scene bands...")
-            latest_result = download_sentinel2_bands_with_validation(
-                latest_scene.uri, required_bands,
-                boundary_geojson=geometry, min_coverage_percent=COVERAGE_CONFIG["DOWNLOAD_MINIMUM"]
-            )
-            latest_paths = latest_result.paths
-            if latest_footprint_coverage >= COVERAGE_CONFIG["MOSAIC_THRESHOLD"]:
-                print(f"  ✓ Single scene provides {latest_footprint_coverage:.1f}% coverage")
-
-        # 3. Process Baseline
-        print(f"\n--- STAGE 2: Clip & Resample ---")
-        print(f"Processing baseline scene...")
-        
-        b_red, transform, b_crs = clip_raster_to_geometry(baseline_paths["B04"], geometry)
-        target_shape = b_red.shape
-        print(f"  Target shape: {target_shape}")
-        
-        b_nir, _, _ = clip_raster_to_geometry(baseline_paths["B08"], geometry, target_shape, transform)
-        b_green, _, _ = clip_raster_to_geometry(baseline_paths["B03"], geometry, target_shape, transform)
-        b_blue, _, _ = clip_raster_to_geometry(baseline_paths["B02"], geometry, target_shape, transform)
-        b_swir, _, _ = clip_raster_to_geometry(baseline_paths["B11"], geometry, target_shape, transform)
-        print(f"  ✓ Baseline bands clipped")
-
-        # 4. Process Latest
-        print(f"\nProcessing latest scene...")
-        l_red, _, _ = clip_raster_to_geometry(latest_paths["B04"], geometry, target_shape, transform)
-        l_nir, _, _ = clip_raster_to_geometry(latest_paths["B08"], geometry, target_shape, transform)
-        l_green, _, _ = clip_raster_to_geometry(latest_paths["B03"], geometry, target_shape, transform)
-        l_blue, _, _ = clip_raster_to_geometry(latest_paths["B02"], geometry, target_shape, transform)
-        l_swir, _, _ = clip_raster_to_geometry(latest_paths["B11"], geometry, target_shape, transform)
-        print(f"  ✓ Latest bands clipped")
-
-        # 5. Calculate Indices
-        print(f"\n--- STAGE 3: Index Calculation ---")
-        
-        print(f"Calculating baseline indices...")
-        b_ndvi = calculate_ndvi(b_red, b_nir)
-        b_ndwi = calculate_ndwi(b_green, b_nir)
-        b_bsi = calculate_bsi(b_red, b_blue, b_nir, b_swir)
-        print(f"  NDVI: min={b_ndvi.min():.3f}, max={b_ndvi.max():.3f}, mean={b_ndvi.mean():.3f}")
-        print(f"  NDWI: min={b_ndwi.min():.3f}, max={b_ndwi.max():.3f}, mean={b_ndwi.mean():.3f}")
-        print(f"  BSI:  min={b_bsi.min():.3f}, max={b_bsi.max():.3f}, mean={b_bsi.mean():.3f}")
-
-        print(f"\nCalculating latest indices...")
-        l_ndvi = calculate_ndvi(l_red, l_nir)
-        l_ndwi = calculate_ndwi(l_green, l_nir)
-        l_bsi = calculate_bsi(l_red, l_blue, l_nir, l_swir)
-        print(f"  NDVI: min={l_ndvi.min():.3f}, max={l_ndvi.max():.3f}, mean={l_ndvi.mean():.3f}")
-        print(f"  NDWI: min={l_ndwi.min():.3f}, max={l_ndwi.max():.3f}, mean={l_ndwi.mean():.3f}")
-        print(f"  BSI:  min={l_bsi.min():.3f}, max={l_bsi.max():.3f}, mean={l_bsi.mean():.3f}")
-
-        # 6. Save indices and generate previews
-        if save_indices and run_id:
-            print(f"\n--- STAGE 4: Save Indices & Generate Previews ---")
-            
-            # Baseline indices
-            print(f"Saving baseline indices...")
-            baseline_ndvi_result = generate_index(b_ndvi, transform, b_crs, 'ndvi', run_id, 'baseline')
-            baseline_ndwi_result = generate_index(b_ndwi, transform, b_crs, 'ndwi', run_id, 'baseline')
-            baseline_bsi_result = generate_index(b_bsi, transform, b_crs, 'bsi', run_id, 'baseline')
-            print(f"  ✓ Baseline NDVI: {baseline_ndvi_result.preview_url}")
-            print(f"  ✓ Baseline NDWI: {baseline_ndwi_result.preview_url}")
-            print(f"  ✓ Baseline BSI: {baseline_bsi_result.preview_url}")
-            
-            # Latest indices
-            print(f"\nSaving latest indices...")
-            latest_ndvi_result = generate_index(l_ndvi, transform, b_crs, 'ndvi', run_id, 'latest')
-            latest_ndwi_result = generate_index(l_ndwi, transform, b_crs, 'ndwi', run_id, 'latest')
-            latest_bsi_result = generate_index(l_bsi, transform, b_crs, 'bsi', run_id, 'latest')
-            print(f"  ✓ Latest NDVI: {latest_ndvi_result.preview_url}")
-            print(f"  ✓ Latest NDWI: {latest_ndwi_result.preview_url}")
-            print(f"  ✓ Latest BSI: {latest_bsi_result.preview_url}")
-            
-            # Change layers
-            print(f"\nGenerating change detection layers...")
-            ndvi_change = generate_change_preview(b_ndvi, l_ndvi, transform, b_crs, 'ndvi', run_id)
-            ndwi_change = generate_change_preview(b_ndwi, l_ndwi, transform, b_crs, 'ndwi', run_id)
-            bsi_change = generate_change_preview(b_bsi, l_bsi, transform, b_crs, 'bsi', run_id)
-            print(f"  ✓ NDVI Change: {ndvi_change.preview_url}")
-            print(f"  ✓ NDWI Change: {ndwi_change.preview_url}")
-            print(f"  ✓ BSI Change: {bsi_change.preview_url}")
-
-        # 7. Change Detection Logic
-        print(f"\n--- STAGE 5: Change Detection & Zone Generation ---")
-        zones: list[Zone] = []
-
-        # Vegetation Loss (NDVI drop > 0.15)
-        ndvi_diff = l_ndvi - b_ndvi
-        veg_loss_mask = (ndvi_diff < -0.15).astype(np.uint8)
-        veg_loss_features = vectorize_mask(veg_loss_mask, transform, b_crs)
-        veg_loss_count = 0
-        for feat in veg_loss_features:
-            area = _calculate_area(feat["geometry"])
-            if area > 0.1:  # Min 0.1 ha to show up
-                zones.append(Zone("vegetation_loss", area, feat["geometry"]))
-                veg_loss_count += 1
-        print(f"  Vegetation loss zones: {veg_loss_count}")
-
-        # Bare Soil Expansion (BSI increase > 0.1) - Mining Pits
-        bsi_diff = l_bsi - b_bsi
-        soil_gain_mask = (bsi_diff > 0.1).astype(np.uint8)
-        soil_features = vectorize_mask(soil_gain_mask, transform, b_crs)
-        mining_count = 0
-        for feat in soil_features:
-            area = _calculate_area(feat["geometry"])
-            if area > 0.1:
-                zones.append(Zone("mining_expansion", area, feat["geometry"]))
-                mining_count += 1
-        print(f"  Mining expansion zones: {mining_count}")
-
-        # Water Change (NDWI delta > 0.2)
-        ndwi_diff = l_ndwi - b_ndwi
-        water_gain_mask = (ndwi_diff > 0.2).astype(np.uint8)
-        water_features = vectorize_mask(water_gain_mask, transform, b_crs)
-        water_count = 0
-        for feat in water_features:
-            area = _calculate_area(feat["geometry"])
-            if area > 0.05:
-                zones.append(Zone("water_accumulation", area, feat["geometry"]))
-                water_count += 1
-        print(f"  Water accumulation zones: {water_count}")
-
-        # 8. Generate alerts using rule engine
-        print(f"\n--- STAGE 6: Alert Generation ---")
-        from backend.alert_rules import AlertRuleEngine
-        
-        alert_engine = AlertRuleEngine()
-        context = {
-            "mine_area": mine_area,
-            "baseline_date": baseline_date,
-            "latest_date": latest_date
+        latest_set, baseline_set = select_latest_two_sets(coverage_sets)
+        epoch_info = {
+            "latest": {"epoch_time": latest_set.epoch_time, "coverage_percent": latest_set.coverage_percent, "scene_uris": latest_set.scene_uris},
+            "baseline": {"epoch_time": baseline_set.epoch_time, "coverage_percent": baseline_set.coverage_percent, "scene_uris": baseline_set.scene_uris},
         }
-        alerts = alert_engine.evaluate_zones(zones, context)
-        print(f"  Generated {len(alerts)} alerts")
+        print(f"  Selected epochs:")
+        print(f"    Latest:   {epoch_info['latest']['epoch_time']} ({epoch_info['latest']['coverage_percent']:.1f}%) with {len(latest_set.scene_uris)} scenes")
+        print(f"    Baseline: {epoch_info['baseline']['epoch_time']} ({epoch_info['baseline']['coverage_percent']:.1f}%) with {len(baseline_set.scene_uris)} scenes")
+        baseline_paths = _download_and_mosaic_bands(
+            baseline_set.scene_uris, required_bands, geometry, output_prefix=f"run{run_id}_baseline" if run_id else "baseline"
+        )
+        print(f"  ✓ Baseline mosaic ready")
+        latest_paths = _download_and_mosaic_bands(
+            latest_set.scene_uris, required_bands, geometry, output_prefix=f"run{run_id}_latest" if run_id else "latest"
+        )
+        print(f"  ✓ Latest mosaic ready")
+    else:
+        # Single-scene fast path
+        print(f"\n[Stage 1] Single-Scene Download")
+        if not baseline_scene or not latest_scene:
+            raise AnalysisError("Baseline and latest scenes required for single-scene analysis", stage="validation", run_id=run_id)
+        baseline_result = download_sentinel2_bands_with_validation(
+            baseline_scene.uri, required_bands, boundary_geojson=geometry, min_coverage_percent=80.0
+        )
+        latest_result = download_sentinel2_bands_with_validation(
+            latest_scene.uri, required_bands, boundary_geojson=geometry, min_coverage_percent=80.0
+        )
+        baseline_paths = baseline_result.paths
+        latest_paths = latest_result.paths
+        print(f"  ✓ Baseline and latest bands downloaded")
+        epoch_info = {
+            "latest": {"epoch_time": latest_scene.acquired_at, "coverage_percent": latest_cov, "scene_uris": [latest_scene.uri]},
+            "baseline": {"epoch_time": baseline_scene.acquired_at if baseline_scene else None, "coverage_percent": baseline_cov, "scene_uris": [baseline_scene.uri] if baseline_scene else []},
+        }
 
-        print(f"\n{'='*60}")
-        print(f"ANALYSIS COMPLETE")
-        print(f"  Total zones: {len(zones)}")
-        print(f"  Total alerts: {len(alerts)}")
-        print(f"{'='*60}\n")
-        
-        return zones, alerts
+    # Clip & resample
+    print(f"\n[Stage 2] Clip & Resample")
+    b_red, transform, b_crs = clip_raster_to_geometry(baseline_paths["B04"], geometry)
+    target_shape = b_red.shape
+    b_nir, _, _ = clip_raster_to_geometry(baseline_paths["B08"], geometry, target_shape, transform)
+    b_green, _, _ = clip_raster_to_geometry(baseline_paths["B03"], geometry, target_shape, transform)
+    b_blue, _, _ = clip_raster_to_geometry(baseline_paths["B02"], geometry, target_shape, transform)
+    b_swir, _, _ = clip_raster_to_geometry(baseline_paths["B11"], geometry, target_shape, transform)
+    print(f"  ✓ Baseline clipped, target shape {target_shape}")
 
-    except (InsufficientCoverageError, MosaicError, IdenticalScenesError, 
-            DatabaseConnectionError, TemporalInconsistencyError) as e:
-        # Re-raise known errors for proper handling
-        print(f"\n✗ Analysis failed: {e}")
-        raise
-    except Exception as e:
-        import traceback
-        print(f"\n✗ Unexpected error in analysis pipeline: {e}")
-        traceback.print_exc()
-        # Wrap in AnalysisError for consistent error handling
-        raise AnalysisError(
-            f"Unexpected error during analysis: {str(e)}",
-            stage="unknown",
-            run_id=run_id,
-            original_error=e
-        ) from e
+    l_red, _, _ = clip_raster_to_geometry(latest_paths["B04"], geometry, target_shape, transform)
+    l_nir, _, _ = clip_raster_to_geometry(latest_paths["B08"], geometry, target_shape, transform)
+    l_green, _, _ = clip_raster_to_geometry(latest_paths["B03"], geometry, target_shape, transform)
+    l_blue, _, _ = clip_raster_to_geometry(latest_paths["B02"], geometry, target_shape, transform)
+    l_swir, _, _ = clip_raster_to_geometry(latest_paths["B11"], geometry, target_shape, transform)
+    print(f"  ✓ Latest clipped")
+
+    # Indices
+    print(f"\n[Stage 3] Index Calculation")
+    b_ndvi = calculate_ndvi(b_red, b_nir)
+    b_ndwi = calculate_ndwi(b_green, b_nir)
+    b_bsi = calculate_bsi(b_red, b_blue, b_nir, b_swir)
+    l_ndvi = calculate_ndvi(l_red, l_nir)
+    l_ndwi = calculate_ndwi(l_green, l_nir)
+    l_bsi = calculate_bsi(l_red, l_blue, l_nir, l_swir)
+    print(f"  ✓ Indices computed")
+
+    # Save previews optionally
+    if save_indices:
+        print(f"\n[Stage 4] Previews & Change Layers")
+        generate_index(b_ndvi, transform, b_crs, 'ndvi', run_id, 'baseline')
+        generate_index(b_ndwi, transform, b_crs, 'ndwi', run_id, 'baseline')
+        generate_index(b_bsi, transform, b_crs, 'bsi', run_id, 'baseline')
+        generate_index(l_ndvi, transform, b_crs, 'ndvi', run_id, 'latest')
+        generate_index(l_ndwi, transform, b_crs, 'ndwi', run_id, 'latest')
+        generate_index(l_bsi, transform, b_crs, 'bsi', run_id, 'latest')
+        generate_change_preview(b_ndvi, l_ndvi, transform, b_crs, 'ndvi', run_id)
+        generate_change_preview(b_ndwi, l_ndwi, transform, b_crs, 'ndwi', run_id)
+        generate_change_preview(b_bsi, l_bsi, transform, b_crs, 'bsi', run_id)
+        print(f"  ✓ Previews generated")
+
+    # Change Detection & Zones
+    print(f"\n[Stage 5] Change Detection & Zones")
+    zones: list[Zone] = []
+    veg_loss_mask = (b_ndvi - l_ndvi) > 0.15
+    mining_mask = (l_bsi - b_bsi) > 0.25
+    water_mask = (l_ndwi - b_ndwi) > 0.20
+
+    def add_zones(mask: np.ndarray, zone_type: str):
+        polys = vectorize_mask(mask, transform, b_crs)
+        for poly in polys:
+            area_ha = _calculate_area(poly["geometry"])
+            zones.append(Zone(zone_type=zone_type, area_ha=area_ha, geometry=poly["geometry"]))
+
+    add_zones(veg_loss_mask, "vegetation_loss")
+    add_zones(mining_mask, "mining_expansion")
+    add_zones(water_mask, "water_accumulation")
+    print(f"  ✓ Zones extracted: {len(zones)}")
+
+    # Alerts
+    from backend.alert_rules import AlertRuleEngine
+    alert_engine = AlertRuleEngine()
+    context = {"mine_area": mine_area, "baseline_date": baseline_scene.acquired_at if baseline_scene else None, "latest_date": latest_scene.acquired_at if latest_scene else None}
+    alerts = alert_engine.evaluate_zones(zones, context)
+    print(f"  ✓ Alerts generated: {len(alerts)}")
+
+    # Stats
+    stats: Dict[str, Any] = {}
+    for z in zones:
+        stats.setdefault(z.zone_type, {"count": 0, "area_ha": 0.0})
+        stats[z.zone_type]["count"] += 1
+        stats[z.zone_type]["area_ha"] += z.area_ha
+    print(f"\n=== CORE ANALYSIS COMPLETE ===")
+
+    metadata = {
+        "required_bands": required_bands,
+        "baseline_paths": baseline_paths,
+        "latest_paths": latest_paths,
+    }
+
+    return {
+        "zones": zones,
+        "alerts": alerts,
+        "stats": stats,
+        "metadata": metadata,
+        "epoch_info": epoch_info,
+    }
 
 def _calculate_area(geometry: dict) -> float:
     """Estimates area in hectares from GeoJSON geometry."""

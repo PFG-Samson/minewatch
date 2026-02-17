@@ -157,6 +157,18 @@ export async function getLatestImagery(): Promise<ImagerySceneDto> {
   return request<ImagerySceneDto>("/imagery/latest");
 }
 
+export type LatestImageryPreviewDto = {
+  preview: { url: string; bounds: [number, number, number, number] } | null;
+  uri?: string;
+  footprint?: Record<string, unknown> | null;
+  message?: string;
+  bands_available?: { B02: boolean; B03: boolean; B04: boolean };
+};
+
+export async function getLatestImageryPreview(): Promise<LatestImageryPreviewDto> {
+  return request<LatestImageryPreviewDto>("/imagery/latest/preview");
+}
+
 export type StacIngestJobDto = {
   collection?: string;
   max_items?: number;

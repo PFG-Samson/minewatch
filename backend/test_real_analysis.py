@@ -10,7 +10,7 @@ import sqlite3
 from pathlib import Path
 from typing import Optional
 
-from backend.analysis_pipeline import run_analysis, ImageryScene
+from backend.analysis_pipeline import run_analysis_core, ImageryScene
 
 
 def main():
@@ -146,22 +146,39 @@ def main():
             return
     print()
 
-    # Step 5: Run the actual analysis
-    print("5. Running real NDVI analysis pipeline...")
+    # Step 5: Run the actual analysis (core processing, no DB)
+    print("5. Running core NDVI analysis pipeline...")
     print("   This may take 2-5 minutes depending on scene size...")
     print()
     
     try:
-        zones, alerts = run_analysis(
+        # Build candidate scenes list from database to enable epoch grouping if needed
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute(
+            "SELECT id, uri, acquired_at, cloud_cover, footprint_geojson FROM imagery_scene ORDER BY acquired_at DESC LIMIT 50"
+        ).fetchall()
+        conn.close()
+        candidates = [{
+            "id": int(r["id"]),
+            "uri": r["uri"],
+            "acquired_at": r["acquired_at"],
+            "cloud_cover": float(r["cloud_cover"]) if r["cloud_cover"] is not None else None,
+            "footprint_geojson": r["footprint_geojson"],
+        } for r in rows]
+
+        result = run_analysis_core(
             mine_area=mine_area,
-            baseline_date=baseline_scene.acquired_at,
-            latest_date=latest_scene.acquired_at,
             baseline_scene=baseline_scene,
-            latest_scene=latest_scene
+            latest_scene=latest_scene,
+            candidate_scenes=candidates,
+            save_indices=True,
         )
+        zones = result["zones"]
+        alerts = result["alerts"]
         
         print("=" * 70)
-        print("ANALYSIS COMPLETE")
+        print("CORE ANALYSIS COMPLETE")
         print("=" * 70)
         print()
         print(f"Generated {len(zones)} zones:")
@@ -191,13 +208,13 @@ def main():
         
         print()
         print("=" * 70)
-        print("✅ SUCCESS: Real analysis pipeline is working!")
+        print("✅ SUCCESS: Core analysis pipeline is working!")
         print("=" * 70)
         
     except Exception as e:
         print()
         print("=" * 70)
-        print("❌ ANALYSIS FAILED")
+        print("❌ CORE ANALYSIS FAILED")
         print("=" * 70)
         print(f"Error type: {type(e).__name__}")
         print(f"Error message: {str(e)}")

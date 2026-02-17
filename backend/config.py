@@ -38,6 +38,14 @@ TEMPORAL_CONFIG: Dict[str, float] = {
     "MAX_BASELINE_LATEST_DIFF_DAYS": 365.0,
 }
 
+# Temporal Grouping Configuration
+TEMPORAL_GROUPING: Dict[str, Any] = {
+    # Tolerance window for grouping scenes into a single acquisition epoch (minutes)
+    "EPOCH_TOLERANCE_MINUTES": 10.0,
+    # Minimum combined coverage required for an epoch to be considered valid (%)
+    "MIN_EPOCH_COVERAGE_PERCENT": 80.0,
+}
+
 
 # Scene Selection Configuration
 SCENE_CONFIG: Dict[str, Any] = {
@@ -91,6 +99,7 @@ def get_all_config() -> Dict[str, Any]:
     return {
         "coverage": COVERAGE_CONFIG,
         "temporal": TEMPORAL_CONFIG,
+        "temporal_grouping": TEMPORAL_GROUPING,
         "scene": SCENE_CONFIG,
         "validation": VALIDATION_CONFIG,
         "performance": PERFORMANCE_CONFIG,
