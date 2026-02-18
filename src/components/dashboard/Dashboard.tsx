@@ -5,7 +5,6 @@ import {
   Layers3,
   AlertTriangle,
   CalendarDays,
-  Download,
   RefreshCw,
   ChevronDown
 } from 'lucide-react';
@@ -21,7 +20,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
-import { createAnalysisRun, downloadAnalysisReport, getLatestImagery, getMineArea, listAlerts, runStacIngestJob, upsertMineArea, getLatestAnalysisStats, clearAllAnalysis } from '@/lib/api';
+import { createAnalysisRun, getLatestImagery, getMineArea, listAlerts, runStacIngestJob, upsertMineArea, getLatestAnalysisStats, clearAllAnalysis } from '@/lib/api';
 import { ImageryView } from './ImageryView';
 import { AlertsView } from './AlertsView';
 import { AnalysisView } from './AnalysisView';
@@ -53,28 +52,7 @@ export function Dashboard() {
     queryFn: () => listAlerts(50),
   });
 
-  const downloadReportMutation = useMutation({
-    mutationFn: async () => {
-      if (!currentRunId) {
-        throw new Error('No analysis run available');
-      }
-      const blob = await downloadAnalysisReport(currentRunId);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `minewatch-report-run-${currentRunId}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    },
-    onSuccess: () => {
-      toast({ title: 'Report downloaded', description: 'PDF report generated successfully.' });
-    },
-    onError: (err) => {
-      toast({ title: 'Report failed', description: err instanceof Error ? err.message : 'Unable to generate report.' });
-    },
-  });
+  // Report generation and download are handled in Reports page
 
   const mineAreaQuery = useQuery({
     queryKey: ['mine-area'],
@@ -226,15 +204,6 @@ export function Dashboard() {
             >
               <RefreshCw className="w-4 h-4" />
               Refresh
-            </Button>
-            <Button
-              size="sm"
-              className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90"
-              onClick={() => downloadReportMutation.mutate()}
-              disabled={downloadReportMutation.isPending || !currentRunId}
-            >
-              <Download className="w-4 h-4" />
-              Generate Report
             </Button>
           </div>
         </header>

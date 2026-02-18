@@ -1,12 +1,13 @@
 import { motion } from 'framer-motion';
 import { FileText, Download, CheckCircle2, AlertCircle } from 'lucide-react';
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { downloadAnalysisReport, listAnalysisRuns, AnalysisRunDto } from '@/lib/api';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { downloadAnalysisReport, listAnalysisRuns, AnalysisRunDto, createAnalysisRun } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
 
 export function ReportsView({ currentRunId }: { currentRunId: number | null }) {
+    const queryClient = useQueryClient();
     const downloadMutation = useMutation({
         mutationFn: async (runId: number) => {
             const blob = await downloadAnalysisReport(runId);
@@ -27,6 +28,21 @@ export function ReportsView({ currentRunId }: { currentRunId: number | null }) {
         },
     });
 
+    const generateMutation = useMutation({
+        mutationFn: async () => {
+            const run = await createAnalysisRun({});
+            const blob = await downloadAnalysisReport(run.id);
+            return { run, blob };
+        },
+        onSuccess: ({ run }) => {
+            queryClient.invalidateQueries({ queryKey: ['analysisRuns', 10] });
+            toast({ title: 'Analysis complete', description: `Report for run #${run.id} has been downloaded.` });
+        },
+        onError: (err) => {
+            toast({ title: 'Generation failed', description: err instanceof Error ? err.message : 'Unable to generate and download report.' });
+        },
+    });
+
     const runsQuery = useQuery<AnalysisRunDto[]>({
         queryKey: ['analysisRuns', 10],
         queryFn: () => listAnalysisRuns(10),
@@ -40,20 +56,31 @@ export function ReportsView({ currentRunId }: { currentRunId: number | null }) {
                     <h2 className="text-2xl font-bold text-foreground">Compliance Reports</h2>
                     <p className="text-muted-foreground">Download audit-ready documentation and generated environmental assessments.</p>
                 </div>
-                <Button
-                    onClick={() => {
-                        if (currentRunId) {
-                            downloadMutation.mutate(currentRunId);
-                        } else {
-                            toast({ title: 'No active run', description: 'Start or refresh an analysis run to download its report.' });
-                        }
-                    }}
-                    disabled={downloadMutation.isPending || !currentRunId}
-                    className="gap-2"
-                >
-                    <FileText className="w-4 h-4" />
-                    Download Current Report
-                </Button>
+                <div className="flex items-center gap-3">
+                    <Button
+                        onClick={() => {
+                            if (currentRunId) {
+                                downloadMutation.mutate(currentRunId);
+                            } else {
+                                toast({ title: 'No active run', description: 'Start or refresh an analysis run to download its report.' });
+                            }
+                        }}
+                        disabled={downloadMutation.isPending || !currentRunId}
+                        className="gap-2"
+                    >
+                        <FileText className="w-4 h-4" />
+                        Download Current Report
+                    </Button>
+                    <Button
+                        variant="outline"
+                        onClick={() => generateMutation.mutate()}
+                        disabled={generateMutation.isPending}
+                        className="gap-2"
+                    >
+                        <FileText className="w-4 h-4" />
+                        Generate & Download
+                    </Button>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 gap-3">
