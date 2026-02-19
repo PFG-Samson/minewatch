@@ -16,6 +16,18 @@ MineWatch is a web application that helps teams monitor land-use and environment
 - **Alerts + PDF Reports:** Automated detection of significant land changes with PDF summary export.
 - **Production-Ready Error Handling:** Graceful failures with detailed error messages, run status tracking, and user-actionable guidance.
 
+## PDF Reports
+
+- Deterministic, audit-ready PDF built with ReportLab
+- Strict section order: Header → Site Identity → Run Metadata → Scene Details → Coverage Quality → Imagery Preview → Index Visual Evidence → Index Statistics → Zones → Alerts → Configuration → Analyst Notes
+- Real AOI metrics: geodesic area (ha), perimeter (km), centroid, bounding box, buffer distance
+- Coverage quality: precise from scene footprints; approximate fallback from index bounds when footprints are missing
+- Scene details parsed from URI: Platform (S2A/S2B), Level (L2A), Tile (TXXXXX)
+- Labeled images: Baseline/Latest for imagery; Baseline/Latest/Change per index with legends (−1, −0.5, 0, 0.5, 1)
+- Index stats: baseline mean, latest mean, delta for NDVI/NDWI/BSI
+- Structured tables: Zones (Class, Count, Total Area ha) and Alerts (Severity, Title, Created At)
+- Reliability: Content-Length header on response; downsampled previews to prevent large-image warnings
+
 ## Repository structure
 
 - `backend/` FastAPI + SQLite API + Scientific Utilities + Production Configuration

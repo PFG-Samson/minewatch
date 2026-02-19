@@ -121,6 +121,28 @@ preview_{scene_uri}.png
 - Cache expires after 7 days
 - Regenerated on-demand via `/analysis-runs/{id}/imagery` endpoint
 
+### Index Preview Cache
+Location: `backend/data/cache/`
+
+Generated PNG previews for indices (NDVI/NDWI/BSI):
+```
+run{ID}_{prefix}_{index}.png
+```
+
+**Performance Note:**
+- Previews are downsampled to a safe maximum dimension to prevent large-image processing warnings and keep report sizes manageable.
+
+### Report Cache
+Location: `backend/data/cache/`
+
+Generated PDF reports:
+```
+report_run{ID}.pdf
+```
+
+**Delivery Note:**
+- API responses include `Content-Length` to ensure reliable downloads across clients.
+
 ---
 
 ## Migration to Cloud Storage (P2)

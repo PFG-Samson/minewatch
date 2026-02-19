@@ -70,6 +70,18 @@ python backend/test_real_analysis.py
   - `coverage_validator.py`: Validates imagery coverage over mine boundaries, identifies gaps
   - `mosaicking.py`: Merges multiple satellite tiles when single scene doesn't cover boundary
   - `index_generator.py`: Saves spectral indices as GeoTIFFs, generates colormapped preview PNGs
+ - **Report Generation**:
+   - Endpoint: `GET /analysis-runs/{run_id}/report`
+   - Deterministic PDF built with ReportLab SimpleDocTemplate
+   - Strict section order; tables always have headers
+   - Real AOI metrics (geodesic area/perimeter, centroid, bbox, buffer)
+   - Coverage quality: precise from footprints, approximate fallback from index bounds
+   - Scene details parsed from URI (Platform, Level, Tile)
+   - Imagery and index previews labeled (Baseline/Latest/Change) with colorbar legends
+   - Index statistics (baseline/latest means, delta)
+   - Alerts and Zones tables (structured, formatted)
+   - Attachments section removed; focused content only
+   - Reliability: Content-Length header; downsampled previews to avoid large-image warnings
 
 ### Data Flow
 1. User uploads GeoJSON boundary via Settings → saved to `mine_area` table

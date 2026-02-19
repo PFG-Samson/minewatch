@@ -52,6 +52,15 @@ Health check: http://localhost:8000/health
 - `GET /analysis-runs/{id}/imagery` - Get RGB preview URLs and bounds
 - `GET /analysis-runs/{id}/indices` - Get index layer URLs (NDVI, NDWI, BSI)
 
+### PDF Report Generator
+- Deterministic ReportLab-based generator with strict section order
+- Real AOI metrics (geodesic area/perimeter, centroid, bounding box, buffer)
+- Coverage quality: precise footprint intersection; approximate index bounds fallback
+- Scene details parsed from URI (Platform, Level, Tile)
+- Labeled imagery (Baseline/Latest) and index previews (Baseline/Latest/Change) with legends
+- Index statistics (baseline/latest means, delta) and structured tables (Zones, Alerts)
+- Reliability improvements: Content-Length header; preview downsampling to avoid large-image warnings
+
 ### Alerts
 - `GET /alerts` - List alerts with geometry
 - `GET /alert-rules` - Get alert rule configuration

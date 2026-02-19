@@ -4,6 +4,28 @@ All notable changes to the MineWatch project will be documented in this file.
 
 ---
 
+## [2.1.0] - 2026-02-19 - Deterministic PDF Reports
+
+### Added
+- Deterministic ReportLab-based PDF generator with strict section order
+- Real AOI metrics (geodesic area, perimeter, centroid, bounding box, buffer)
+- Precise coverage quality using scene footprints; approximate fallback via index bounds
+- Scene details parsing from URI (Platform S2A/S2B, Level L2A, Tile TXXXXX)
+- Labeled imagery (Baseline/Latest) and index previews (Baseline/Latest/Change) with colorbar legends and ticks
+- Index statistics table (baseline mean, latest mean, delta)
+- Structured tables for Zones and Alerts with persistent headers
+
+### Changed
+- Removed attachments section from reports to focus on valuable information
+- Added Content-Length header to report responses for reliable downloads
+- Downsampled previews to avoid large-image warnings and reduce file size
+
+### Fixed
+- Resolved zero-byte PDF downloads in some clients
+- Fixed a syntax error in report generation code
+
+---
+
 ## [2.0.0] - 2026-02-14 - Production-Ready Release 🚀
 
 ### Major Features Added

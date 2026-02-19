@@ -105,6 +105,22 @@ GET http://localhost:8000/alert-rules        # View current config
 PUT http://localhost:8000/alert-rules        # Update config
 ```
 
+### Q: What is in the PDF report?
+**A:** A deterministic, audit-ready summary including:
+- Site identity and run metadata
+- Baseline/latest scene details, acquisition dates, cloud cover
+- Coverage quality metrics and AOI geodesic metrics (area, perimeter)
+- Labeled imagery and index previews with colorbar legends
+- Index statistics (baseline/latest means, delta)
+- Structured tables for zones and alerts
+- Configuration snapshot and analyst notes
+
+### Q: Why did my PDF download as 0 bytes?
+**A:** Older clients sometimes require `Content-Length` to be set. The backend now includes this header and the frontend falls back to a direct download if a Blob is empty. Ensure the backend is running and try again.
+
+### Q: What is a "DecompressionBombWarning" in logs?
+**A:** PIL warns when loading very large images. Previews are now downsampled to safe dimensions before inclusion in reports, eliminating this warning.
+
 ### Q: What triggers each alert type?
 **A:**
 - **Vegetation Loss**: NDVI drop > 0.15 AND area > threshold (default: 0.2 ha minimum)

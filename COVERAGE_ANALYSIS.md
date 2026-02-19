@@ -11,6 +11,15 @@ The system **DOES have multi-scene mosaicking capabilities** but has **critical 
 
 ---
 
+## Updates (2026-02-19)
+
+- Centralized coverage thresholds implemented in `backend/config.py`
+- Post-mosaic coverage validation added with strict minimum requirement
+- Report coverage quality now uses precise footprint intersection; falls back to index bounds when footprints are unavailable
+- Deterministic PDF reports include coverage metrics for auditability
+
+---
+
 ## System Architecture
 
 ### Components
