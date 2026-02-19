@@ -22,6 +22,12 @@ import re
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image, KeepTogether
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from shapely.geometry import shape, Polygon
+from shapely.geometry.base import BaseGeometry
+from pyproj import Geod
 
 from backend.analysis_pipeline import ImageryScene, run_analysis
 from backend.utils.imagery_utils import generate_rgb_png, CACHE_DIR
@@ -187,99 +193,351 @@ def get_analysis_report(run_id: int) -> Response:
         run = conn.execute("SELECT * FROM analysis_run WHERE id = ?", (run_id,)).fetchone()
         if run is None:
             raise HTTPException(status_code=404, detail="Analysis run not found")
-        
-        # Get mine area information
-        mine_area = conn.execute("SELECT name, description FROM mine_area WHERE id = 1").fetchone()
-        mine_name = mine_area["name"] if mine_area else "Mine Site"
-        mine_description = mine_area["description"] if mine_area and mine_area["description"] else None
+        mine_area = conn.execute("SELECT name, description, boundary_geojson, buffer_km, updated_at FROM mine_area WHERE id = 1").fetchone()
+        name = mine_area["name"] if mine_area and mine_area["name"] else "N/A"
+        description = mine_area["description"] if mine_area and mine_area["description"] else None
+        aoi: Optional[BaseGeometry] = None
+        if mine_area and mine_area["boundary_geojson"]:
+            try:
+                aoi = shape(json.loads(mine_area["boundary_geojson"]))
+            except Exception:
+                aoi = None
+        def fmt_date(s: Optional[str]) -> str:
+            if not s:
+                return "N/A"
+            try:
+                s2 = s.replace("Z", "+00:00")
+                dt = datetime.fromisoformat(s2)
+                return dt.strftime("%Y-%m-%d %H:%M UTC")
+            except Exception:
+                return "N/A"
+        def fmt_float(v: Optional[float]) -> str:
+            return f"{float(v):.2f}" if v is not None else "N/A"
+        def fmt_percent(v: Optional[float]) -> str:
+            return f"{float(v):.2f}%" if v is not None else "N/A"
+        def parse_uri(u: Optional[str]) -> tuple[str, str, str]:
+            if not u:
+                return ("Unknown", "Unknown", "Unknown")
+            m = re.search(r"^(S2[AB])_MSI(L2A)_.+?_T([0-9A-Z]{5})", u)
+            if not m:
+                return ("Unknown", "Unknown", "Unknown")
+            return (m.group(1), m.group(2), f"T{m.group(3)}")
+        def fetch_scene(scene_id: Optional[int]) -> dict:
+            if not scene_id:
+                return {"uri": None, "acquired_at": None, "cloud_cover": None}
+            row = conn.execute("SELECT uri, acquired_at, cloud_cover FROM imagery_scene WHERE id = ?", (scene_id,)).fetchone()
+            if not row:
+                return {"uri": None, "acquired_at": None, "cloud_cover": None}
+            return {"uri": row["uri"], "acquired_at": row["acquired_at"], "cloud_cover": row["cloud_cover"]}
+        baseline_scene = fetch_scene(run["baseline_scene_id"])
+        latest_scene = fetch_scene(run["latest_scene_id"])
+        baseline_dt = run["baseline_date"] or baseline_scene["acquired_at"]
+        latest_dt = run["latest_date"] or latest_scene["acquired_at"]
+        base_platform, base_level, base_tile = parse_uri(baseline_scene["uri"])
+        latest_platform, latest_level, latest_tile = parse_uri(latest_scene["uri"])
+        cache_dir = CACHE_DIR
+        index_dir = Path(__file__).parent / "data" / "indices"
+        def preview_path(uri: Optional[str], label: str) -> Optional[Path]:
+            if uri:
+                p = cache_dir / f"preview_{uri}.png"
+                if p.exists():
+                    return p
+            m = cache_dir / f"preview_run{run_id}_{label}.png"
+            return m if m.exists() else None
+        def index_preview(prefix: str, idx: str) -> Optional[Path]:
+            p = cache_dir / f"run{run_id}_{prefix}_{idx}.png"
+            return p if p.exists() else None
+        def index_geotiff(prefix: str, idx: str) -> Optional[Path]:
+            p = index_dir / f"run{run_id}_{prefix}_{idx}.tif"
+            return p if p.exists() else None
+        def index_mean(path: Optional[Path]) -> Optional[float]:
+            if not path:
+                return None
+            try:
+                import rasterio
+                with rasterio.open(str(path)) as src:
+                    arr = src.read(1)
+                import numpy as np
+                mask = np.isfinite(arr)
+                if mask.any():
+                    return float(np.mean(arr[mask]))
+                return None
+            except Exception:
+                return None
+        def approx_coverage(prefix: str, idx: str) -> Optional[float]:
+            if not aoi:
+                return None
+            p = index_geotiff(prefix, idx)
+            if not p:
+                return None
+            try:
+                from backend.utils.spatial import get_raster_bounds_4326
+                b = get_raster_bounds_4326(str(p))
+                if not b or len(b) != 4:
+                    return None
+                minx, miny, maxx, maxy = b
+                rect = Polygon([(minx, miny), (maxx, miny), (maxx, maxy), (minx, maxy)])
+                inter = aoi.intersection(rect)
+                if aoi.area <= 0:
+                    return None
+                pct = (inter.area / aoi.area) * 100.0
+                return max(0.0, min(100.0, pct))
+            except Exception:
+                return None
+        baseline_cov_precise = None
+        latest_cov_precise = None
+        baseline_cov_approx = approx_coverage("baseline", "ndvi")
+        latest_cov_approx = approx_coverage("latest", "ndvi")
+        def geod_area(geom: Optional[BaseGeometry]) -> Optional[float]:
+            if not geom:
+                return None
+            try:
+                geod = Geod(ellps="WGS84")
+                def poly_area(g):
+                    lon, lat = zip(*list(g.exterior.coords))
+                    a, _ = geod.polygon_area_perimeter(lon, lat)
+                    return abs(a)
+                if geom.geom_type == "Polygon":
+                    return poly_area(geom)
+                if geom.geom_type == "MultiPolygon":
+                    return sum(poly_area(p) for p in geom.geoms)
+                return None
+            except Exception:
+                return None
+        # Precise coverage using footprint geometry if available
+        try:
+            if aoi:
+                b_row = conn.execute("SELECT footprint_geojson FROM imagery_scene WHERE id = ?", (run["baseline_scene_id"],)).fetchone()
+                l_row = conn.execute("SELECT footprint_geojson FROM imagery_scene WHERE id = ?", (run["latest_scene_id"],)).fetchone()
+                if b_row and b_row["footprint_geojson"]:
+                    fp = shape(json.loads(b_row["footprint_geojson"]))
+                    inter = aoi.intersection(fp)
+                    aoi_area_m2 = geod_area(aoi)
+                    inter_area_m2 = geod_area(inter)
+                    if aoi_area_m2 and inter_area_m2 is not None:
+                        baseline_cov_precise = max(0.0, min(100.0, (inter_area_m2 / aoi_area_m2) * 100.0))
+                if l_row and l_row["footprint_geojson"]:
+                    fp = shape(json.loads(l_row["footprint_geojson"]))
+                    inter = aoi.intersection(fp)
+                    aoi_area_m2 = geod_area(aoi)
+                    inter_area_m2 = geod_area(inter)
+                    if aoi_area_m2 and inter_area_m2 is not None:
+                        latest_cov_precise = max(0.0, min(100.0, (inter_area_m2 / aoi_area_m2) * 100.0))
+        except Exception:
+            pass
+        doc_path = cache_dir / f"report_run{run_id}.pdf"
+        styles = getSampleStyleSheet()
+        title_style = ParagraphStyle("title", parent=styles["Title"], alignment=1, fontSize=16)
+        normal = styles["BodyText"]
+        bold = ParagraphStyle("bold", parent=styles["BodyText"], fontName="Helvetica-Bold")
+        story = []
+        story.append(Paragraph("MineWatch Environmental Monitoring Report", title_style))
+        story.append(Spacer(1, 6))
+        aoi_area_ha = "N/A"
+        aoi_perim_km = "N/A"
+        aoi_centroid = "N/A"
+        aoi_bbox = "N/A"
+        buffer_km = mine_area["buffer_km"] if mine_area and mine_area["buffer_km"] is not None else None
+        if aoi:
+            try:
+                geod = Geod(ellps="WGS84")
+                if aoi.geom_type == "Polygon":
+                    lon, lat = zip(*list(aoi.exterior.coords))
+                    area_m2, perimeter_m = geod.polygon_area_perimeter(lon, lat)
+                    area_m2 = abs(area_m2)
+                    aoi_area_ha = f"{area_m2/10000.0:.2f}"
+                    aoi_perim_km = f"{perimeter_m/1000.0:.2f}"
+                elif aoi.geom_type == "MultiPolygon":
+                    total_area = 0.0
+                    total_perim = 0.0
+                    for poly in aoi.geoms:
+                        lon, lat = zip(*list(poly.exterior.coords))
+                        area_m2, perimeter_m = geod.polygon_area_perimeter(lon, lat)
+                        total_area += abs(area_m2)
+                        total_perim += perimeter_m
+                    aoi_area_ha = f"{total_area/10000.0:.2f}"
+                    aoi_perim_km = f"{total_perim/1000.0:.2f}"
+                ctd = aoi.centroid
+                aoi_centroid = f"{ctd.y:.5f}, {ctd.x:.5f}"
+                minx, miny, maxx, maxy = aoi.bounds
+                aoi_bbox = f"Lat {miny:.5f}–{maxy:.5f}, Lon {minx:.5f}–{maxx:.5f}"
+            except Exception:
+                pass
 
-        zones = conn.execute(
-            "SELECT zone_type, area_ha FROM analysis_zone WHERE run_id = ?",
-            (run_id,),
-        ).fetchall()
-
-        alerts = conn.execute(
-            """
-            SELECT alert_type, title, severity, created_at
-            FROM alert
-            WHERE run_id = ?
-            ORDER BY created_at DESC
-            """,
-            (run_id,),
-        ).fetchall()
-
-        totals: dict[str, float] = {}
-        for z in zones:
-            zt = str(z["zone_type"])
-            totals[zt] = totals.get(zt, 0.0) + float(z["area_ha"])
-
-        buf = BytesIO()
-        c = canvas.Canvas(buf, pagesize=A4)
-        width, height = A4
-        x = 18 * mm
-        y = height - 18 * mm
-
-        def draw_line(text: str, dy: float = 6.5 * mm, font: str = "Helvetica", size: int = 11) -> None:
-            nonlocal y
-            c.setFont(font, size)
-            c.drawString(x, y, text)
-            y -= dy
-
-        # Header with mine name
-        draw_line("MineWatch – Environmental Change Report", dy=9 * mm, font="Helvetica-Bold", size=16)
-        draw_line(f"Site: {mine_name}", dy=7 * mm, font="Helvetica-Bold", size=13)
-        
-        # Add description if available
-        if mine_description:
-            # Word wrap description if too long
-            max_chars = 85
-            if len(mine_description) > max_chars:
-                desc_lines = [mine_description[i:i+max_chars] for i in range(0, len(mine_description), max_chars)]
-                for desc_line in desc_lines[:2]:  # Max 2 lines
-                    draw_line(desc_line, dy=5.5 * mm, font="Helvetica-Oblique", size=10)
-            else:
-                draw_line(mine_description, dy=6 * mm, font="Helvetica-Oblique", size=10)
-        
-        y -= 3 * mm  # Extra spacing
-        draw_line(f"Run ID: {int(run['id'])}")
-        draw_line(f"Created (UTC): {run['created_at']}")
-        draw_line(f"Baseline date: {run['baseline_date'] or 'n/a'}")
-        draw_line(f"Latest date: {run['latest_date'] or 'n/a'}")
-        draw_line(f"Status: {run['status']}", dy=10 * mm)
-
-        draw_line("Summary (Area by class)", dy=8 * mm, font="Helvetica-Bold", size=13)
-        if not totals:
-            draw_line("No zones available.")
+        site_rows = [
+            [Paragraph("Site Name", bold), Paragraph(name, normal)],
+            [Paragraph("AOI Area (ha)", bold), Paragraph(aoi_area_ha, normal)],
+            [Paragraph("AOI Perimeter (km)", bold), Paragraph(aoi_perim_km, normal)],
+            [Paragraph("AOI Centroid (lat, lon)", bold), Paragraph(aoi_centroid, normal)],
+            [Paragraph("AOI Bounding Box", bold), Paragraph(aoi_bbox, normal)],
+            [Paragraph("Buffer (km)", bold), Paragraph(fmt_float(buffer_km), normal)],
+            [Paragraph("Generated", bold), Paragraph(fmt_date(run["created_at"]), normal)],
+            [Paragraph("Run ID", bold), Paragraph(str(run_id), normal)],
+        ]
+        site_table = Table(site_rows, hAlign="LEFT", colWidths=[120, 380])
+        site_table.setStyle(TableStyle([("GRID", (0, 0), (-1, -1), 0.25, colors.grey), ("BACKGROUND", (0, 0), (-1, 0), colors.whitesmoke), ("FONT", (0, 0), (-1, -1), "Helvetica", 10)]))
+        story.append(site_table)
+        story.append(Spacer(1, 8))
+        run_rows = [
+            [Paragraph("Status", bold), Paragraph(str(run["status"]), normal)],
+            [Paragraph("Baseline Date", bold), Paragraph(fmt_date(baseline_dt), normal)],
+            [Paragraph("Latest Date", bold), Paragraph(fmt_date(latest_dt), normal)],
+        ]
+        run_table = Table(run_rows, hAlign="LEFT", colWidths=[120, 380])
+        run_table.setStyle(TableStyle([("GRID", (0, 0), (-1, -1), 0.25, colors.grey), ("FONT", (0, 0), (-1, -1), "Helvetica", 10)]))
+        story.append(run_table)
+        story.append(Spacer(1, 8))
+        scene_rows = [
+            [Paragraph("Type", bold), Paragraph("Date", bold), Paragraph("Cloud Cover %", bold), Paragraph("Platform", bold), Paragraph("Level", bold), Paragraph("Tile", bold), Paragraph("Scene URI", bold)],
+            [Paragraph("Baseline", normal), Paragraph(fmt_date(baseline_dt), normal), Paragraph(fmt_percent(baseline_scene["cloud_cover"]), normal), Paragraph(base_platform, normal), Paragraph(base_level, normal), Paragraph(base_tile, normal), Paragraph(baseline_scene["uri"] or "N/A", normal)],
+            [Paragraph("Latest", normal), Paragraph(fmt_date(latest_dt), normal), Paragraph(fmt_percent(latest_scene["cloud_cover"]), normal), Paragraph(latest_platform, normal), Paragraph(latest_level, normal), Paragraph(latest_tile, normal), Paragraph(latest_scene["uri"] or "N/A", normal)],
+        ]
+        scene_table = Table(scene_rows, hAlign="LEFT", repeatRows=1, colWidths=[70, 110, 100, 70, 60, 60, 130])
+        scene_table.setStyle(TableStyle([("GRID", (0, 0), (-1, -1), 0.25, colors.grey), ("BACKGROUND", (0, 0), (-1, 0), colors.whitesmoke), ("FONT", (0, 0), (-1, -1), "Helvetica", 9)]))
+        story.append(scene_table)
+        story.append(Spacer(1, 8))
+        cov_rows = [
+            [Paragraph("Baseline Coverage", bold), Paragraph(fmt_percent(baseline_cov_precise if baseline_cov_precise is not None else baseline_cov_approx), normal)],
+            [Paragraph("Latest Coverage", bold), Paragraph(fmt_percent(latest_cov_precise if latest_cov_precise is not None else latest_cov_approx), normal)],
+        ]
+        cov_table = Table(cov_rows, hAlign="LEFT", colWidths=[150, 350])
+        cov_table.setStyle(TableStyle([("GRID", (0, 0), (-1, -1), 0.25, colors.grey), ("FONT", (0, 0), (-1, -1), "Helvetica", 10)]))
+        story.append(cov_table)
+        story.append(Spacer(1, 8))
+        b_prev = preview_path(baseline_scene["uri"], "baseline")
+        l_prev = preview_path(latest_scene["uri"], "latest")
+        def image_or_placeholder(p: Optional[Path], max_h: int = 240) -> Table:
+            if p:
+                try:
+                    img = Image(str(p))
+                    img._restrictSize(9999, max_h)
+                    return Table([[img]], colWidths=[250])
+                except Exception:
+                    pass
+            t = Table([[Paragraph("Preview Not Available", normal)]], colWidths=[250], rowHeights=[max_h])
+            t.setStyle(TableStyle([("GRID", (0, 0), (-1, -1), 0.5, colors.grey), ("VALIGN", (0, 0), (-1, -1), "MIDDLE"), ("ALIGN", (0, 0), (-1, -1), "CENTER")]))
+            return t
+        img_row = Table([[image_or_placeholder(b_prev), image_or_placeholder(l_prev)],
+                         [Paragraph("Baseline", normal), Paragraph("Latest", normal)]], colWidths=[250, 250])
+        img_row.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "MIDDLE")]))
+        story.append(KeepTogether([Paragraph("Imagery Preview", bold), Spacer(1, 4), img_row]))
+        story.append(Spacer(1, 8))
+        def legend_image(idx: str):
+            try:
+                from backend.utils.index_generator import COLORMAPS
+                width_px, height_px = 256, 16
+                import numpy as np
+                from PIL import Image as PILImage
+                cols = COLORMAPS.get(idx, COLORMAPS["ndvi"])["colors"]
+                grad = np.zeros((height_px, width_px, 3), dtype=np.uint8)
+                for xi in range(width_px):
+                    v = -1.0 + (2.0 * xi / (width_px - 1))
+                    col = cols[-1][1]
+                    for j in range(len(cols) - 1):
+                        v1, cc1 = cols[j]
+                        v2, cc2 = cols[j + 1]
+                        if v1 <= v <= v2:
+                            t = (v - v1) / (v2 - v1)
+                            col = (int(cc1[0] + t * (cc2[0] - cc1[0])), int(cc1[1] + t * (cc2[1] - cc1[1])), int(cc1[2] + t * (cc2[2] - cc1[2])))
+                            break
+                    grad[:, xi, :] = col
+                bio = BytesIO()
+                PILImage.fromarray(grad).save(bio, format="PNG")
+                bio.seek(0)
+                img = Image(bio)
+                img._restrictSize(9999, 40)
+                return img
+            except Exception:
+                t = Table([[Paragraph("Legend N/A", normal)]], colWidths=[250], rowHeights=[40])
+                t.setStyle(TableStyle([("GRID", (0, 0), (-1, -1), 0.5, colors.grey), ("VALIGN", (0, 0), (-1, -1), "MIDDLE"), ("ALIGN", (0, 0), (-1, -1), "CENTER")]))
+                return t
+        idx_blocks = []
+        for idx in ["ndvi", "ndwi", "bsi"]:
+            row_imgs = []
+            for prefix in ["baseline", "latest", "change"]:
+                p = index_preview(prefix, idx)
+                row_imgs.append(image_or_placeholder(p))
+            labels = Table([[Paragraph("Baseline " + idx.upper(), normal),
+                             Paragraph("Latest " + idx.upper(), normal),
+                             Paragraph("Change " + idx.upper(), normal)]], colWidths=[166, 166, 166])
+            legend = legend_image(idx)
+            ticks = Table([["-1.0", "-0.5", "0.0", "0.5", "1.0"]], colWidths=[50, 50, 50, 50, 50])
+            ticks.setStyle(TableStyle([("FONT", (0, 0), (-1, -1), "Helvetica", 8), ("ALIGN", (0, 0), (-1, -1), "CENTER")]))
+            idx_table = Table([[row_imgs[0], row_imgs[1], row_imgs[2]],
+                               [labels._cellvalues[0][0], labels._cellvalues[0][1], labels._cellvalues[0][2]],
+                               [legend, legend, legend],
+                               [ticks, ticks, ticks]],
+                              colWidths=[166, 166, 166], rowHeights=[240, 16, 46, 12])
+            idx_table.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "MIDDLE")]))
+            idx_blocks.append(KeepTogether([Paragraph(idx.upper(), bold), Spacer(1, 4), idx_table]))
+        story.append(Paragraph("Index Visual Evidence", bold))
+        story.extend(idx_blocks)
+        story.append(Spacer(1, 8))
+        def mean_or_na(prefix: str, idx: str) -> Optional[float]:
+            return index_mean(index_geotiff(prefix, idx))
+        stats_rows = [["Index", "Baseline Avg", "Latest Avg", "Delta"]]
+        for idx in ["ndvi", "ndwi", "bsi"]:
+            b = mean_or_na("baseline", idx)
+            l = mean_or_na("latest", idx)
+            d = (l - b) if (b is not None and l is not None) else None
+            stats_rows.append([idx.upper(), fmt_float(b), fmt_float(l), fmt_float(d)])
+        stats_table = Table(stats_rows, hAlign="LEFT", repeatRows=1, colWidths=[80, 120, 120, 120])
+        stats_table.setStyle(TableStyle([("GRID", (0, 0), (-1, -1), 0.25, colors.grey), ("BACKGROUND", (0, 0), (-1, 0), colors.whitesmoke), ("FONT", (0, 0), (-1, -1), "Helvetica", 9)]))
+        story.append(Paragraph("Index Statistics Summary", bold))
+        story.append(stats_table)
+        story.append(Spacer(1, 8))
+        zone_rows = conn.execute("SELECT zone_type, COUNT(*) as cnt, SUM(area_ha) as total_area FROM analysis_zone WHERE run_id = ? GROUP BY zone_type", (run_id,)).fetchall()
+        z_rows = [["Class", "Count", "Total Area (ha)"]]
+        if zone_rows:
+            for zr in zone_rows:
+                z_rows.append([str(zr["zone_type"]).replace("_", " ").title(), str(int(zr["cnt"])), fmt_float(float(zr["total_area"] or 0.0))])
+        zones_table = Table(z_rows, hAlign="LEFT", repeatRows=1, colWidths=[200, 100, 200])
+        zones_table.setStyle(TableStyle([("GRID", (0, 0), (-1, -1), 0.25, colors.grey), ("BACKGROUND", (0, 0), (-1, 0), colors.whitesmoke), ("FONT", (0, 0), (-1, -1), "Helvetica", 9)]))
+        story.append(Paragraph("Zones Table", bold))
+        story.append(zones_table)
+        story.append(Spacer(1, 8))
+        alerts_rows = conn.execute("SELECT severity, title, created_at FROM alert WHERE run_id = ? ORDER BY created_at DESC", (run_id,)).fetchall()
+        a_rows = [["Severity", "Title", "Created At"]]
+        if alerts_rows:
+            for a in alerts_rows:
+                a_rows.append([str(a["severity"]).upper(), str(a["title"]), fmt_date(a["created_at"])])
         else:
-            for key in sorted(totals.keys()):
-                draw_line(f"- {key.replace('_', ' ').title()}: {totals[key]:.2f} hectares")
-
-        y -= 4 * mm
-        draw_line("Alerts", dy=8 * mm, font="Helvetica-Bold", size=13)
-        if not alerts:
-            draw_line("No alerts generated for this run.")
-        else:
-            for a in alerts[:12]:
-                draw_line(f"- [{a['severity'].upper()}] {a['title']} ({a['created_at']})", size=10)
-
-        y -= 6 * mm
-        draw_line("Notes", dy=8 * mm, font="Helvetica-Bold", size=13)
-        draw_line("This report is generated automatically based on satellite-derived change detection.", size=10)
-        draw_line("Use this document as supporting evidence for compliance checks and ESG reporting.", size=10)
-
-        c.showPage()
-        c.save()
-
-        pdf_bytes = buf.getvalue()
-        # Include mine name in filename (sanitized)
-        safe_mine_name = "".join(c if c.isalnum() or c in (' ', '-', '_') else '_' for c in mine_name)
-        safe_mine_name = safe_mine_name.replace(' ', '-').lower()[:30]  # Max 30 chars
-        filename = f"minewatch-{safe_mine_name}-run-{run_id}.pdf"
-
+            a_rows.append(["N/A", "No alerts generated", "N/A"])
+        alerts_table = Table(a_rows, hAlign="LEFT", repeatRows=1, colWidths=[100, 300, 100])
+        alerts_table.setStyle(TableStyle([("GRID", (0, 0), (-1, -1), 0.25, colors.grey), ("BACKGROUND", (0, 0), (-1, 0), colors.whitesmoke), ("FONT", (0, 0), (-1, -1), "Helvetica", 9)]))
+        story.append(Paragraph("Alerts Table", bold))
+        story.append(alerts_table)
+        story.append(Spacer(1, 8))
+        try:
+            from backend.alert_rules import AlertRuleEngine
+            engine = AlertRuleEngine()
+            config = engine.get_config()
+            version = config.get("version") or "N/A"
+            rules = config.get("rules") or {}
+            ndvi_thr = rules.get("vegetation_loss", {}).get("min_area_ha", None)
+            ndwi_thr = rules.get("water_accumulation", {}).get("min_area_ha", None)
+            bsi_thr = rules.get("mining_expansion", {}).get("min_area_ha", None)
+        except Exception:
+            version = "N/A"; ndvi_thr = None; ndwi_thr = None; bsi_thr = None
+        cfg_rows = [["Field", "Value"], ["Rules Version", version], ["NDVI threshold", fmt_float(ndvi_thr)], ["NDWI threshold", fmt_float(ndwi_thr)], ["BSI threshold", fmt_float(bsi_thr)]]
+        cfg_table = Table(cfg_rows, hAlign="LEFT", repeatRows=1, colWidths=[200, 300])
+        cfg_table.setStyle(TableStyle([("GRID", (0, 0), (-1, -1), 0.25, colors.grey), ("BACKGROUND", (0, 0), (-1, 0), colors.whitesmoke), ("FONT", (0, 0), (-1, -1), "Helvetica", 9)]))
+        story.append(Paragraph("Configuration", bold))
+        story.append(cfg_table)
+        story.append(Spacer(1, 8))
+        # Attachments section removed as requested
+        notes_text = "No analyst notes provided."
+        story.append(Paragraph("Analyst Notes", bold))
+        story.append(Paragraph(notes_text, normal))
+        doc = SimpleDocTemplate(str(doc_path), pagesize=A4, leftMargin=18 * mm, rightMargin=18 * mm, topMargin=18 * mm, bottomMargin=18 * mm)
+        doc.build(story)
+        with open(doc_path, "rb") as f:
+            pdf_bytes = f.read()
+        filename = f"minewatch-{name.replace(' ', '-').lower()[:30]}-run-{run_id}.pdf"
         return Response(
             content=pdf_bytes,
             media_type="application/pdf",
-            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+            headers={"Content-Disposition": f'attachment; filename=\"{filename}\"', "Content-Length": str(len(pdf_bytes)), "Cache-Control": "no-cache"},
         )
     finally:
         conn.close()
