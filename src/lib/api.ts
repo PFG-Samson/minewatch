@@ -42,6 +42,9 @@ export type AnalysisRunDto = {
   latest_date: string | null;
   status: string;
   created_at: string;
+  mean_ndvi?: number | null;
+  mean_ndwi?: number | null;
+  mean_bsi?: number | null;
 };
 
 export type GeoJsonFeatureCollection = {
@@ -123,6 +126,17 @@ export async function getAnalysisRun(runId: number): Promise<AnalysisRunWithZone
 
 export async function listAnalysisRuns(limit = 10): Promise<AnalysisRunDto[]> {
   return request<AnalysisRunDto[]>(`/analysis-runs?limit=${encodeURIComponent(String(limit))}`);
+}
+
+export type AnalysisTrendDto = {
+  date: string;
+  ndvi: number;
+  ndwi: number;
+  bsi: number;
+};
+
+export async function listAnalysisTrends(limit = 20): Promise<AnalysisTrendDto[]> {
+  return request<AnalysisTrendDto[]>(`/analysis-runs/trends?limit=${encodeURIComponent(String(limit))}`);
 }
 
 export async function getRunImagery(runId: number): Promise<RunImageryDto> {

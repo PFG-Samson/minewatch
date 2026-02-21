@@ -1,10 +1,20 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { TrendingUp, Activity, BarChart3, Info, Loader2, Play, AlertTriangle } from 'lucide-react';
+import { TrendingUp, Activity, BarChart3, Info, Loader2, Play, AlertTriangle, Waves, Mountain, ShieldAlert, Download, RefreshCw } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { listAnalysisRuns, getAnalysisRun, listImageryScenesSimple, createAnalysisRun } from '@/lib/api';
+import { format } from "date-fns";
+import { TrendChart } from "./TrendChart";
+import {
+    createAnalysisRun,
+    listImageryScenes,
+    getLatestAnalysisStats,
+    AnalysisRunDto,
+    listAnalysisRuns,
+    getAnalysisRun,
+    listImageryScenesSimple,
+} from "@/lib/api";
 import { SceneSelector } from './SceneSelector';
 import { toast } from '@/hooks/use-toast';
 
@@ -174,19 +184,11 @@ export function AnalysisView() {
                     <CardHeader>
                         <CardTitle className="text-sm font-medium flex items-center gap-2">
                             <TrendingUp className="w-4 h-4 text-vegetation" />
-                            NDVI Trend (Normalized Difference Vegetation Index)
+                            Spectral Index Trends (NDVI, NDWI, BSI)
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="h-[300px] w-full bg-secondary/20 rounded-lg flex items-center justify-center border border-dashed border-border p-6">
-                            <div className="text-center">
-                                <BarChart3 className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
-                                <p className="text-sm text-muted-foreground">Interactive trend charts require additional time-series data ingestions.</p>
-                                <p className="text-xs text-muted-foreground/60 mt-1">
-                                    {latestRun ? `Latest Analysis: ${new Date(latestRun.run.created_at).toLocaleDateString()}` : 'No analysis runs yet.'}
-                                </p>
-                            </div>
-                        </div>
+                        <TrendChart />
                     </CardContent>
                 </Card>
 

@@ -125,7 +125,10 @@ def init_db() -> None:
                 baseline_scene_id INTEGER,
                 latest_scene_id INTEGER,
                 status TEXT NOT NULL,
-                created_at TEXT NOT NULL
+                created_at TEXT NOT NULL,
+                mean_ndvi REAL,
+                mean_ndwi REAL,
+                mean_bsi REAL
             )
             """
         )
@@ -137,6 +140,12 @@ def init_db() -> None:
             conn.execute("ALTER TABLE analysis_run ADD COLUMN baseline_scene_id INTEGER")
         if "latest_scene_id" not in existing_cols:
             conn.execute("ALTER TABLE analysis_run ADD COLUMN latest_scene_id INTEGER")
+        if "mean_ndvi" not in existing_cols:
+            conn.execute("ALTER TABLE analysis_run ADD COLUMN mean_ndvi REAL")
+        if "mean_ndwi" not in existing_cols:
+            conn.execute("ALTER TABLE analysis_run ADD COLUMN mean_ndwi REAL")
+        if "mean_bsi" not in existing_cols:
+            conn.execute("ALTER TABLE analysis_run ADD COLUMN mean_bsi REAL")
 
         mine_cols = {
             r["name"] for r in conn.execute("PRAGMA table_info(mine_area)").fetchall()
@@ -616,6 +625,9 @@ class AnalysisRunOut(BaseModel):
     latest_scene_id: Optional[int] = None
     status: str
     created_at: str
+    mean_ndvi: Optional[float] = None
+    mean_ndwi: Optional[float] = None
+    mean_bsi: Optional[float] = None
 
 
 class ImagerySceneCreate(BaseModel):
@@ -1051,7 +1063,7 @@ def create_analysis_run(payload: AnalysisRunCreate) -> AnalysisRunOut:
                 mine_area["name"] = mine_name
 
         try:
-            zones, alerts = run_analysis(
+            zones, alerts, mean_stats = run_analysis(
                 mine_area=mine_area,
                 baseline_date=payload.baseline_date,
                 latest_date=payload.latest_date,
@@ -1144,6 +1156,32 @@ def create_analysis_run(payload: AnalysisRunCreate) -> AnalysisRunOut:
                  json.dumps(a.geometry) if a.geometry else None, now),
             )
 
+        # Determine final dates from scenes if payload was missing them
+        actual_baseline_date = payload.baseline_date or (baseline_scene.acquired_at if baseline_scene else None)
+        actual_latest_date = payload.latest_date or (latest_scene.acquired_at if latest_scene else None)
+
+        # Update run status and store trend stats + missing dates
+        conn.execute(
+            """
+            UPDATE analysis_run 
+            SET status = ?, 
+                mean_ndvi = ?, 
+                mean_ndwi = ?, 
+                mean_bsi = ?,
+                baseline_date = ?,
+                latest_date = ?
+            WHERE id = ?
+            """,
+            (
+                "completed",
+                mean_stats.get("mean_ndvi"),
+                mean_stats.get("mean_ndwi"),
+                mean_stats.get("mean_bsi"),
+                actual_baseline_date,
+                actual_latest_date,
+                run_id
+            ),
+        )
         conn.commit()
 
         row = conn.execute("SELECT * FROM analysis_run WHERE id = ?", (run_id,)).fetchone()
@@ -1158,6 +1196,9 @@ def create_analysis_run(payload: AnalysisRunCreate) -> AnalysisRunOut:
             latest_scene_id=row["latest_scene_id"],
             status=row["status"],
             created_at=row["created_at"],
+            mean_ndvi=row["mean_ndvi"],
+            mean_ndwi=row["mean_ndwi"],
+            mean_bsi=row["mean_bsi"],
         )
     finally:
         conn.close()
@@ -1649,6 +1690,97 @@ def get_latest_imagery_preview() -> dict[str, Any]:
     finally:
         conn.close()
 
+@app.get("/analysis-runs/trends")
+def get_analysis_trends(limit: int = 20) -> list[dict[str, Any]]:
+    """Get historical trend data for spectral indices"""
+    conn = get_db()
+    try:
+        rows = conn.execute(
+            """
+            SELECT latest_date, mean_ndvi, mean_ndwi, mean_bsi
+            FROM analysis_run
+            WHERE status = 'completed' AND mean_ndvi IS NOT NULL
+            ORDER BY latest_date ASC
+            LIMIT ?
+            """,
+            (limit,),
+        ).fetchall()
+        
+        return [
+            {
+                "date": r["latest_date"],
+                "ndvi": float(r["mean_ndvi"]) if r["mean_ndvi"] is not None else 0.0,
+                "ndwi": float(r["mean_ndwi"]) if r["mean_ndwi"] is not None else 0.0,
+                "bsi": float(r["mean_bsi"]) if r["mean_bsi"] is not None else 0.0,
+            }
+            for r in rows
+        ]
+    finally:
+        conn.close()
+
+
+@app.get("/analysis-runs/latest/stats")
+def get_latest_analysis_stats() -> dict[str, Any]:
+    """Get statistics from the most recent analysis run"""
+    conn = get_db()
+    try:
+        # Get latest run
+        run = conn.execute(
+            "SELECT id, created_at, baseline_date, latest_date FROM analysis_run ORDER BY created_at DESC LIMIT 1"
+        ).fetchone()
+        
+        if not run:
+            return {
+                "has_data": False,
+                "vegetation_loss_ha": 0,
+                "vegetation_gain_ha": 0,
+                "mining_expansion_ha": 0,
+                "water_accumulation_ha": 0,
+                "total_change_ha": 0,
+                "last_updated": None,
+            }
+        
+        run_id = run["id"]
+        
+        # Get zone totals
+        zones = conn.execute(
+            """
+            SELECT zone_type, SUM(area_ha) as total_area
+            FROM analysis_zone
+            WHERE run_id = ?
+            GROUP BY zone_type
+            """,
+            (run_id,)
+        ).fetchall()
+        
+        stats = {
+            "vegetation_loss": 0.0,
+            "vegetation_gain": 0.0,
+            "mining_expansion": 0.0,
+            "water_accumulation": 0.0,
+        }
+        
+        total_change = 0.0
+        for z in zones:
+            z_type = z["zone_type"]
+            if z_type in stats:
+                stats[z_type] = float(z["total_area"])
+                total_change += stats[z_type]
+
+        return {
+            "has_data": True,
+            "vegetation_loss_ha": stats["vegetation_loss"],
+            "vegetation_gain_ha": stats["vegetation_gain"],
+            "mining_expansion_ha": stats["mining_expansion"],
+            "water_accumulation_ha": stats["water_accumulation"],
+            "total_change_ha": total_change,
+            "last_updated": run["created_at"],
+            "baseline_date": run["baseline_date"],
+            "latest_date": run["latest_date"],
+        }
+    finally:
+        conn.close()
+
 
 @app.get("/analysis-runs/{run_id}")
 def get_analysis_run(run_id: int) -> dict[str, Any]:
@@ -1697,7 +1829,7 @@ def list_analysis_runs(limit: int = 50) -> list[AnalysisRunOut]:
     try:
         rows = conn.execute(
             """
-            SELECT id, baseline_date, latest_date, baseline_scene_id, latest_scene_id, status, created_at
+            SELECT id, baseline_date, latest_date, baseline_scene_id, latest_scene_id, status, created_at, mean_ndvi, mean_ndwi, mean_bsi
             FROM analysis_run
             ORDER BY created_at DESC
             LIMIT ?
@@ -1714,11 +1846,16 @@ def list_analysis_runs(limit: int = 50) -> list[AnalysisRunOut]:
                 latest_scene_id=r["latest_scene_id"],
                 status=r["status"],
                 created_at=r["created_at"],
+                mean_ndvi=r["mean_ndvi"],
+                mean_ndwi=r["mean_ndwi"],
+                mean_bsi=r["mean_bsi"],
             )
             for r in rows
         ]
     finally:
         conn.close()
+
+
 
 
 @app.get("/analysis-runs/latest/stats")

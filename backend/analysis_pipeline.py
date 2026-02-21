@@ -390,7 +390,7 @@ def run_analysis(
     run_id: Optional[int] = None,
     save_indices: bool = True,
     db_conn = None,
-) -> tuple[list[Zone], list[Alert]]:
+) -> tuple[list[Zone], list[Alert], dict[str, float]]:
     """
     Production wrapper around run_analysis_core.
     Validates DB requirement and delegates scientific processing to run_analysis_core.
@@ -435,7 +435,8 @@ def run_analysis(
     )
     zones: list[Zone] = result["zones"]
     alerts: list[Alert] = result["alerts"]
-    return zones, alerts
+    mean_stats: dict[str, float] = result.get("mean_stats", {})
+    return zones, alerts, mean_stats
 
 
 def run_analysis_core(
@@ -619,6 +620,18 @@ def run_analysis_core(
         stats.setdefault(z.zone_type, {"count": 0, "area_ha": 0.0})
         stats[z.zone_type]["count"] += 1
         stats[z.zone_type]["area_ha"] += z.area_ha
+    
+    # Calculate means for the latest scene to track trends
+    valid_ndvi = l_ndvi[~np.isnan(l_ndvi)]
+    valid_ndwi = l_ndwi[~np.isnan(l_ndwi)]
+    valid_bsi = l_bsi[~np.isnan(l_bsi)]
+    
+    mean_stats = {
+        "mean_ndvi": float(np.mean(valid_ndvi)) if len(valid_ndvi) > 0 else 0.0,
+        "mean_ndwi": float(np.mean(valid_ndwi)) if len(valid_ndwi) > 0 else 0.0,
+        "mean_bsi": float(np.mean(valid_bsi)) if len(valid_bsi) > 0 else 0.0,
+    }
+    
     print(f"\n=== CORE ANALYSIS COMPLETE ===")
 
     metadata = {
@@ -631,6 +644,7 @@ def run_analysis_core(
         "zones": zones,
         "alerts": alerts,
         "stats": stats,
+        "mean_stats": mean_stats,
         "metadata": metadata,
         "epoch_info": epoch_info,
     }
