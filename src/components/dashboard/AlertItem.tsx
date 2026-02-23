@@ -55,7 +55,7 @@ export function AlertItem({
   geometry,
   onLocationClick
 }: AlertItemProps) {
-  const styles = severityStyles[severity];
+  const styles = severityStyles[severity as keyof typeof severityStyles] || severityStyles.medium;
   const Icon = typeIcons[type] || AlertTriangle;
 
   return (

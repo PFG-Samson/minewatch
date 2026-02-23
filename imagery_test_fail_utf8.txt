@@ -1,0 +1,1316 @@
+﻿
+> vite_react_shadcn_ts@0.0.0 test
+> vitest run src/components/dashboard/ImageryView.test.tsx --reporter=verbose
+
+
+[1m[46m RUN [49m[22m [36mv3.2.4 [39m[90mC:/Users/Samson Adeyomoye/Documents/mine-watcher-main[39m
+
+node.exe : [90mstderr[2m | src/components/dashboard/ImageryView.test.tsx[2m 
+> [22m[2mImageryView Component[2m > [22m[2mrenders imagery scenes from MSW
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Users\Samson Adeyomoye\AppDa ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([90mstderr[2m...scenes from MSW: 
+   String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+[22m[39m[MSW] Error: intercepted a request without a matching request handler:
+
+  ΓÇó GET http://localhost:8000/imagery?limit=20
+
+If you still wish to intercept this unhandled request, please create a request 
+handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+[90mstderr[2m | src/components/dashboard/ImageryView.test.tsx[2m > 
+[22m[2mImageryView Component[2m > [22m[2mrenders imagery scenes from MSW
+[22m[39m[MSW] Error: intercepted a request without a matching request handler:
+
+  ΓÇó GET http://localhost:8000/imagery?limit=20
+
+If you still wish to intercept this unhandled request, please create a request 
+handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+ [32mΓ£ô[39m src/components/dashboard/ImageryView.test.tsx[2m > [22mImageryView Component[2m > [22mrenders the imagery catalog header[32m 39[2mms[22m[39m
+[90mstderr[2m | src/components/dashboard/ImageryView.test.tsx[2m > 
+[22m[2mImageryView Component[2m > [22m[2mallows selecting baseline and 
+latest scenes
+[22m[39m[MSW] Error: intercepted a request without a matching request handler:
+
+  ΓÇó GET http://localhost:8000/imagery?limit=20
+
+If you still wish to intercept this unhandled request, please create a request 
+handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+ [31m├ù[39m src/components/dashboard/ImageryView.test.tsx[2m > [22mImageryView Component[2m > [22mrenders imagery scenes from MSW[33m 1020[2mms[22m[39m
+[31m   ΓåÆ Unable to find an element with the text: 2/1/2024. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+[36m<body>[31m
+  [36m<div>[31m
+    [36m<div[31m
+      [33mclass[31m=[32m"space-y-6"[31m
+    [36m>[31m
+      [36m<div[31m
+        [33mclass[31m=[32m"flex items-center justify-between"[31m
+      [36m>[31m
+        [36m<div>[31m
+          [36m<h2[31m
+            [33mclass[31m=[32m"text-2xl font-bold text-foreground"[31m
+          [36m>[31m
+            [0mSatellite Imagery Catalog[0m
+          [36m</h2>[31m
+          [36m<p[31m
+            [33mclass[31m=[32m"text-muted-foreground"[31m
+          [36m>[31m
+            [0mSelect two scenes to perform a comparative scientific analysis (NDVI, NDWI, BSI).[0m
+          [36m</p>[31m
+        [36m</div>[31m
+        [36m<div[31m
+          [33mclass[31m=[32m"flex gap-3"[31m
+        [36m>[31m
+          [36m<button[31m
+            [33mclass[31m=[32m"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 gap-2"[31m
+          [36m>[31m
+            [36m<svg[31m
+              [33mclass[31m=[32m"lucide lucide-refresh-cw w-4 h-4"[31m
+              [33mfill[31m=[32m"none"[31m
+              [33mheight[31m=[32m"24"[31m
+              [33mstroke[31m=[32m"currentColor"[31m
+              [33mstroke-linecap[31m=[32m"round"[31m
+              [33mstroke-linejoin[31m=[32m"round"[31m
+              [33mstroke-width[31m=[32m"2"[31m
+              [33mviewBox[31m=[32m"0 0 24 24"[31m
+              [33mwidth[31m=[32m"24"[31m
+              [33mxmlns[31m=[32m"http://www.w3.org/2000/svg"[31m
+            [36m>[31m
+              [36m<path[31m
+                [33md[31m=[32m"M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"[31m
+              [36m/>[31m
+              [36m<path[31m
+                [33md[31m=[32m"M21 3v5h-5"[31m
+              [36m/>[31m
+              [36m<path[31m
+                [33md[31m=[32m"M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"[31m
+              [36m/>[31m
+              [36m<path[31m
+                [33md[31m=[32m"M8 16H3v5"[31m
+              [36m/>[31m
+            [36m</svg>[31m
+            [0mSync STAC[0m
+          [36m</button>[31m
+          [36m<button[31m
+            [33mclass[31m=[32m"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 text-primary-foreground h-10 px-4 py-2 gap-2 bg-accent hover:bg-accent/90"[31m
+            [33mdisabled[31m=[32m""[31m
+          [36m>[31m
+            [36m<svg[31m
+              [33mclass[31m=[32m"lucide lucide-play w-4 h-4"[31m
+              [33mfill[31m=[32m"none"[31m
+              [33mheight[31m=[32m"24"[31m
+              [33mstroke[31m=[32m"currentColor"[31m
+              [33mstroke-linecap[31m=[32m"round"[31m
+              [33mstroke-linejoin[31m=[32m"round"[31m
+              [33mstroke-width[31m=[32m"2"[31m
+              [33mviewBox[31m=[32m"0 0 24 24"[31m
+              [33mwidth[31m=[32m"24"[31m
+              [33mxmlns[31m=[32m"http://www.w3.org/2000/svg"[31m
+            [36m>[31m
+              [36m<polygon[31m
+                [33mpoints[31m=[32m"6 3 20 12 6 21 6 3"[31m
+              [36m/>[31m
+            [36m</svg>[31m
+            [0mRun Selected Analysis[0m
+          [36m</button>[31m
+        [36m</div>[31m
+      [36m</div>[31m
+      [36m<div[31m
+        [33mclass[31m=[32m"grid grid-cols-1 gap-4"[31m
+      [36m>[31m
+        [36m<div[31m
+          [33mclass[31m=[32m"rounded-lg border bg-card text-card-foreground shadow-sm border-dashed"[31m
+        [36m>[31m
+          [36m<div[31m
+            [33mclass[31m=[32m"p-6 py-12 flex flex-col items-center"[31m
+          [36m>[31m
+            [36m<svg[31m
+              [33mclass[31m=[32m"lucide lucide-satellite w-12 h-12 text-muted-foreground/30 mb-4"[31m
+              [33mfill[31m=[32m"none"[31m
+              [33mheight[31m=[32m"24"[31m
+              [33mstroke[31m=[32m"currentColor"[31m
+              [33mstroke-linecap[31m=[32m"round"[31m
+              [33mstroke-linejoin[31m=[32m"round"[31m
+              [33mstroke-width[31m=[32m"2"[31m
+              [33mviewBox[31m=[32m"0 0 24 24"[31m
+              [33mwidth[31m=[32m"24"[31m
+              [33mxmlns[31m=[32m"http://www.w3.org/2000/svg"[31m
+            [36m>[31m
+              [36m<path[31m
+                [33md[31m=[32m"M13 7 9 3 5 7l4 4"[31m
+              [36m/>[31m
+              [36m<path[31m
+                [33md[31m=[32m"m17 11 4 4-4 4-4-4"[31m
+              [36m/>[31m
+              [36m<path[31m
+                [33md[31m=[32m"m8 12 4 4 6-6-4-4Z"[31m
+              [36m/>[31m
+              [36m<path[31m
+                [33md[31m=[32m"m16 8 3-3"[31m
+              [36m/>[31m
+              [36m<path[31m
+                [33md[31m=[32m"M9 21a6 6 0 0 0-6-6"[31m
+              [36m/>[31m
+            [36m</svg>[31m
+            [36m<p[31m
+              [33mclass[31m=[32m"text-lg font-medium"[31m
+            [36m>[31m
+              [0mNo imagery ingested yet[0m
+            [36m</p>[31m
+            [36m<p[31m
+              [33mclass[31m=[32m"text-sm text-muted-foreground mb-6"[31m
+            [36m>[31m
+              [0mRun a STAC ingestion job to populate your local catalog.[0m
+            [36m</p>[31m
+            [36m<button[31m
+              [33mclass[31m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"[31m
+            [36m>[31m
+              [0mStart First Ingestion[0m
+            [36m</button>[31m
+          [36m</div>[31m
+        [36m</div>[31m
+      [36m</div>[31m
+    [36m</div>[31m
+  [36m</div>[31m
+[36m</body>[31m
+
+Ignored nodes: comments, script, style
+[36m<html>[31m
+  [36m<head />[31m
+  [36m<body>[31m
+    [36m<div>[31m
+      [36m<div[31m
+        [33mclass[31m=[32m"space-y-6"[31m
+      [36m>[31m
+        [36m<div[31m
+          [33mclass[31m=[32m"flex items-center justify-between"[31m
+        [36m>[31m
+          [36m<div>[31m
+            [36m<h2[31m
+              [33mclass[31m=[32m"text-2xl font-bold text-foreground"[31m
+            [36m>[31m
+              [0mSatellite Imagery Catalog[0m
+            [36m</h2>[31m
+            [36m<p[31m
+              [33mclass[31m=[32m"text-muted-foreground"[31m
+            [36m>[31m
+              [0mSelect two scenes to perform a comparative scientific analysis (NDVI, NDWI, BSI).[0m
+            [36m</p>[31m
+          [36m</div>[31m
+          [36m<div[31m
+            [33mclass[31m=[32m"flex gap-3"[31m
+          [36m>[31m
+            [36m<button[31m
+              [33mclass[31m=[32m"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 gap-2"[31m
+            [36m>[31m
+              [36m<svg[31m
+                [33mclass[31m=[32m"lucide lucide-refresh-cw w-4 h-4"[31m
+                [33mfill[31m=[32m"none"[31m
+                [33mheight[31m=[32m"24"[31m
+                [33mstroke[31m=[32m"currentColor"[31m
+                [33mstroke-linecap[31m=[32m"round"[31m
+                [33mstroke-linejoin[31m=[32m"round"[31m
+                [33mstroke-width[31m=[32m"2"[31m
+                [33mviewBox[31m=[32m"0 0 24 24"[31m
+                [33mwidth[31m=[32m"24"[31m
+                [33mxmlns[31m=[32m"http://www.w3.org/2000/svg"[31m
+              [36m>[31m
+                [36m<path[31m
+                  [33md[31m=[32m"M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"[31m
+                [36m/>[31m
+                [36m<path[31m
+                  [33md[31m=[32m"M21 3v5h-5"[31m
+                [36m/>[31m
+                [36m<path[31m
+                  [33md[31m=[32m"M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"[31m
+                [36m/>[31m
+                [36m<path[31m
+                  [33md[31m=[32m"M8 16H3v5"[31m
+                [36m/>[31m
+              [36m</svg>[31m
+              [0mSync STAC[0m
+            [36m</button>[31m
+            [36m<button[31m
+              [33mclass[31m=[32m"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 text-primary-foreground h-10 px-4 py-2 gap-2 bg-accent hover:bg-accent/90"[31m
+              [33mdisabled[31m=[32m""[31m
+            [36m>[31m
+              [36m<svg[31m
+                [33mclass[31m=[32m"lucide lucide-play w-4 h-4"[31m
+                [33mfill[31m=[32m"none"[31m
+                [33mheight[31m=[32m"24"[31m
+                [33mstroke[31m=[32m"currentColor"[31m
+                [33mstroke-linecap[31m=[32m"round"[31m
+                [33mstroke-linejoin[31m=[32m"round"[31m
+                [33mstroke-width[31m=[32m"2"[31m
+                [33mviewBox[31m=[32m"0 0 24 24"[31m
+                [33mwidth[31m=[32m"24"[31m
+                [33mxmlns[31m=[32m"http://www.w3.org/2000/svg"[31m
+              [36m>[31m
+                [36m<polygon[31m
+                  [33mpoints[31m=[32m"6 3 20 12 6 21 6 3"[31m
+                [36m/>[31m
+              [36m</svg>[31m
+              [0mRun Selected Analysis[0m
+            [36m</button>[31m
+          [36m</div>[31m
+        [36m</div>[31m
+        [36m<div[31m
+          [33mclass[31m=[32m"grid grid-cols-1 gap-4"[31m
+        [36m>[31m
+          [36m<div[31m
+            [33mclass[31m=[32m"rounded-lg border bg-card text-card-foreground shadow-sm border-dashed"[31m
+          [36m>[31m
+            [36m<div[31m
+              [33mclass[31m=[32m"p-6 py-12 flex flex-col items-center"[31m
+            [36m>[31m
+              [36m<svg[31m
+                [33mclass[31m=[32m"lucide lucide-satellite w-12 h-12 text-muted-foreground/30 mb-4"[31m
+                [33mfill[31m=[32m"none"[31m
+                [33mheight[31m=[32m"24"[31m
+                [33mstroke[31m=[32m"currentColor"[31m
+                [33mstroke-linecap[31m=[32m"round"[31m
+                [33mstroke-linejoin[31m=[32m"round"[31m
+                [33mstroke-width[31m=[32m"2"[31m
+                [33mviewBox[31m=[32m"0 0 24 24"[31m
+                [33mwidth[31m=[32m"24"[31m
+                [33mxmlns[31m=[32m"http://www.w3.org/2000/svg"[31m
+              [36m>[31m
+                [36m<path[31m
+                  [33md[31m=[32m"M13 7 9 3 5 7l4 4"[31m
+                [36m/>[31m
+                [36m<path[31m
+                  [33md[31m=[32m"m17 11 4 4-4 4-4-4"[31m
+                [36m/>[31m
+                [36m<path[31m
+                  [33md[31m=[32m"m8 12 4 4 6-6-4-4Z"[31m
+                [36m/>[31m
+                [36m<path[31m
+                  [33md[31m=[32m"m16 8 3-3"[31m
+                [36m/>[31m
+                [36m<path[31m
+                  [33md[31m=[32m"M9 21a6 6 0 0 0-6-6"[31m
+                [36m/>[31m
+              [36m</svg>[31m
+              [36m<p[31m
+                [33mclass[31m=[32m"text-lg font-medium"[31m
+              [36m>[31m
+                [0mNo imagery ingested yet[0m
+              [36m</p>[31m
+              [36m<p[31m
+                [33mclass[31m=[32m"text-sm text-muted-foreground mb-6"[31m
+              [36m>[31m
+                [0mRun a STAC ingestion job to populate your local catalog.[0m
+              [36m</p>[31m
+              [36m<button[31m
+                [33mclass[31m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"[31m
+              [36m>[31m
+                [0mStart First Ingestion[0m
+              [36m</button>[31m
+            [36m</div>[31m
+          [36m</div>[31m
+        [36m</div>[31m
+      [36m</div>[31m
+    [36m</div>[31m
+  [36m</body>[31m
+[36m</html>[31m[39m
+[90mstderr[2m | src/components/dashboard/ImageryView.test.tsx
+[22m[39m[MSW] Error: intercepted a request without a matching request handler:
+
+  ΓÇó GET http://localhost:8000/imagery?limit=20
+
+If you still wish to intercept this unhandled request, please create a request 
+handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+ [31m├ù[39m src/components/dashboard/ImageryView.test.tsx[2m > [22mImageryView Component[2m > [22mallows selecting baseline and latest scenes[33m 1021[2mms[22m[39m
+[31m   ΓåÆ Unable to find an element with the text: 2/1/2024. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+[36m<body>[31m
+  [36m<div>[31m
+    [36m<div[31m
+      [33mclass[31m=[32m"space-y-6"[31m
+    [36m>[31m
+      [36m<div[31m
+        [33mclass[31m=[32m"flex items-center justify-between"[31m
+      [36m>[31m
+        [36m<div>[31m
+          [36m<h2[31m
+            [33mclass[31m=[32m"text-2xl font-bold text-foreground"[31m
+          [36m>[31m
+            [0mSatellite Imagery Catalog[0m
+          [36m</h2>[31m
+          [36m<p[31m
+            [33mclass[31m=[32m"text-muted-foreground"[31m
+          [36m>[31m
+            [0mSelect two scenes to perform a comparative scientific analysis (NDVI, NDWI, BSI).[0m
+          [36m</p>[31m
+        [36m</div>[31m
+        [36m<div[31m
+          [33mclass[31m=[32m"flex gap-3"[31m
+        [36m>[31m
+          [36m<button[31m
+            [33mclass[31m=[32m"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 gap-2"[31m
+          [36m>[31m
+            [36m<svg[31m
+              [33mclass[31m=[32m"lucide lucide-refresh-cw w-4 h-4"[31m
+              [33mfill[31m=[32m"none"[31m
+              [33mheight[31m=[32m"24"[31m
+              [33mstroke[31m=[32m"currentColor"[31m
+              [33mstroke-linecap[31m=[32m"round"[31m
+              [33mstroke-linejoin[31m=[32m"round"[31m
+              [33mstroke-width[31m=[32m"2"[31m
+              [33mviewBox[31m=[32m"0 0 24 24"[31m
+              [33mwidth[31m=[32m"24"[31m
+              [33mxmlns[31m=[32m"http://www.w3.org/2000/svg"[31m
+            [36m>[31m
+              [36m<path[31m
+                [33md[31m=[32m"M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"[31m
+              [36m/>[31m
+              [36m<path[31m
+                [33md[31m=[32m"M21 3v5h-5"[31m
+              [36m/>[31m
+              [36m<path[31m
+                [33md[31m=[32m"M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"[31m
+              [36m/>[31m
+              [36m<path[31m
+                [33md[31m=[32m"M8 16H3v5"[31m
+              [36m/>[31m
+            [36m</svg>[31m
+            [0mSync STAC[0m
+          [36m</button>[31m
+          [36m<button[31m
+            [33mclass[31m=[32m"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 text-primary-foreground h-10 px-4 py-2 gap-2 bg-accent hover:bg-accent/90"[31m
+            [33mdisabled[31m=[32m""[31m
+          [36m>[31m
+            [36m<svg[31m
+              [33mclass[31m=[32m"lucide lucide-play w-4 h-4"[31m
+              [33mfill[31m=[32m"none"[31m
+              [33mheight[31m=[32m"24"[31m
+              [33mstroke[31m=[32m"currentColor"[31m
+              [33mstroke-linecap[31m=[32m"round"[31m
+              [33mstroke-linejoin[31m=[32m"round"[31m
+              [33mstroke-width[31m=[32m"2"[31m
+              [33mviewBox[31m=[32m"0 0 24 24"[31m
+              [33mwidth[31m=[32m"24"[31m
+              [33mxmlns[31m=[32m"http://www.w3.org/2000/svg"[31m
+            [36m>[31m
+              [36m<polygon[31m
+                [33mpoints[31m=[32m"6 3 20 12 6 21 6 3"[31m
+              [36m/>[31m
+            [36m</svg>[31m
+            [0mRun Selected Analysis[0m
+          [36m</button>[31m
+        [36m</div>[31m
+      [36m</div>[31m
+      [36m<div[31m
+        [33mclass[31m=[32m"grid grid-cols-1 gap-4"[31m
+      [36m>[31m
+        [36m<div[31m
+          [33mclass[31m=[32m"rounded-lg border bg-card text-card-foreground shadow-sm border-dashed"[31m
+        [36m>[31m
+          [36m<div[31m
+            [33mclass[31m=[32m"p-6 py-12 flex flex-col items-center"[31m
+          [36m>[31m
+            [36m<svg[31m
+              [33mclass[31m=[32m"lucide lucide-satellite w-12 h-12 text-muted-foreground/30 mb-4"[31m
+              [33mfill[31m=[32m"none"[31m
+              [33mheight[31m=[32m"24"[31m
+              [33mstroke[31m=[32m"currentColor"[31m
+              [33mstroke-linecap[31m=[32m"round"[31m
+              [33mstroke-linejoin[31m=[32m"round"[31m
+              [33mstroke-width[31m=[32m"2"[31m
+              [33mviewBox[31m=[32m"0 0 24 24"[31m
+              [33mwidth[31m=[32m"24"[31m
+              [33mxmlns[31m=[32m"http://www.w3.org/2000/svg"[31m
+            [36m>[31m
+              [36m<path[31m
+                [33md[31m=[32m"M13 7 9 3 5 7l4 4"[31m
+              [36m/>[31m
+              [36m<path[31m
+                [33md[31m=[32m"m17 11 4 4-4 4-4-4"[31m
+              [36m/>[31m
+              [36m<path[31m
+                [33md[31m=[32m"m8 12 4 4 6-6-4-4Z"[31m
+              [36m/>[31m
+              [36m<path[31m
+                [33md[31m=[32m"m16 8 3-3"[31m
+              [36m/>[31m
+              [36m<path[31m
+                [33md[31m=[32m"M9 21a6 6 0 0 0-6-6"[31m
+              [36m/>[31m
+            [36m</svg>[31m
+            [36m<p[31m
+              [33mclass[31m=[32m"text-lg font-medium"[31m
+            [36m>[31m
+              [0mNo imagery ingested yet[0m
+            [36m</p>[31m
+            [36m<p[31m
+              [33mclass[31m=[32m"text-sm text-muted-foreground mb-6"[31m
+            [36m>[31m
+              [0mRun a STAC ingestion job to populate your local catalog.[0m
+            [36m</p>[31m
+            [36m<button[31m
+              [33mclass[31m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"[31m
+            [36m>[31m
+              [0mStart First Ingestion[0m
+            [36m</button>[31m
+          [36m</div>[31m
+        [36m</div>[31m
+      [36m</div>[31m
+    [36m</div>[31m
+  [36m</div>[31m
+[36m</body>[31m
+
+Ignored nodes: comments, script, style
+[36m<html>[31m
+  [36m<head />[31m
+  [36m<body>[31m
+    [36m<div>[31m
+      [36m<div[31m
+        [33mclass[31m=[32m"space-y-6"[31m
+      [36m>[31m
+        [36m<div[31m
+          [33mclass[31m=[32m"flex items-center justify-between"[31m
+        [36m>[31m
+          [36m<div>[31m
+            [36m<h2[31m
+              [33mclass[31m=[32m"text-2xl font-bold text-foreground"[31m
+            [36m>[31m
+              [0mSatellite Imagery Catalog[0m
+            [36m</h2>[31m
+            [36m<p[31m
+              [33mclass[31m=[32m"text-muted-foreground"[31m
+            [36m>[31m
+              [0mSelect two scenes to perform a comparative scientific analysis (NDVI, NDWI, BSI).[0m
+            [36m</p>[31m
+          [36m</div>[31m
+          [36m<div[31m
+            [33mclass[31m=[32m"flex gap-3"[31m
+          [36m>[31m
+            [36m<button[31m
+              [33mclass[31m=[32m"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 gap-2"[31m
+            [36m>[31m
+              [36m<svg[31m
+                [33mclass[31m=[32m"lucide lucide-refresh-cw w-4 h-4"[31m
+                [33mfill[31m=[32m"none"[31m
+                [33mheight[31m=[32m"24"[31m
+                [33mstroke[31m=[32m"currentColor"[31m
+                [33mstroke-linecap[31m=[32m"round"[31m
+                [33mstroke-linejoin[31m=[32m"round"[31m
+                [33mstroke-width[31m=[32m"2"[31m
+                [33mviewBox[31m=[32m"0 0 24 24"[31m
+                [33mwidth[31m=[32m"24"[31m
+                [33mxmlns[31m=[32m"http://www.w3.org/2000/svg"[31m
+              [36m>[31m
+                [36m<path[31m
+                  [33md[31m=[32m"M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"[31m
+                [36m/>[31m
+                [36m<path[31m
+                  [33md[31m=[32m"M21 3v5h-5"[31m
+                [36m/>[31m
+                [36m<path[31m
+                  [33md[31m=[32m"M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"[31m
+                [36m/>[31m
+                [36m<path[31m
+                  [33md[31m=[32m"M8 16H3v5"[31m
+                [36m/>[31m
+              [36m</svg>[31m
+              [0mSync STAC[0m
+            [36m</button>[31m
+            [36m<button[31m
+              [33mclass[31m=[32m"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 text-primary-foreground h-10 px-4 py-2 gap-2 bg-accent hover:bg-accent/90"[31m
+              [33mdisabled[31m=[32m""[31m
+            [36m>[31m
+              [36m<svg[31m
+                [33mclass[31m=[32m"lucide lucide-play w-4 h-4"[31m
+                [33mfill[31m=[32m"none"[31m
+                [33mheight[31m=[32m"24"[31m
+                [33mstroke[31m=[32m"currentColor"[31m
+                [33mstroke-linecap[31m=[32m"round"[31m
+                [33mstroke-linejoin[31m=[32m"round"[31m
+                [33mstroke-width[31m=[32m"2"[31m
+                [33mviewBox[31m=[32m"0 0 24 24"[31m
+                [33mwidth[31m=[32m"24"[31m
+                [33mxmlns[31m=[32m"http://www.w3.org/2000/svg"[31m
+              [36m>[31m
+                [36m<polygon[31m
+                  [33mpoints[31m=[32m"6 3 20 12 6 21 6 3"[31m
+                [36m/>[31m
+              [36m</svg>[31m
+              [0mRun Selected Analysis[0m
+            [36m</button>[31m
+          [36m</div>[31m
+        [36m</div>[31m
+        [36m<div[31m
+          [33mclass[31m=[32m"grid grid-cols-1 gap-4"[31m
+        [36m>[31m
+          [36m<div[31m
+            [33mclass[31m=[32m"rounded-lg border bg-card text-card-foreground shadow-sm border-dashed"[31m
+          [36m>[31m
+            [36m<div[31m
+              [33mclass[31m=[32m"p-6 py-12 flex flex-col items-center"[31m
+            [36m>[31m
+              [36m<svg[31m
+                [33mclass[31m=[32m"lucide lucide-satellite w-12 h-12 text-muted-foreground/30 mb-4"[31m
+                [33mfill[31m=[32m"none"[31m
+                [33mheight[31m=[32m"24"[31m
+                [33mstroke[31m=[32m"currentColor"[31m
+                [33mstroke-linecap[31m=[32m"round"[31m
+                [33mstroke-linejoin[31m=[32m"round"[31m
+                [33mstroke-width[31m=[32m"2"[31m
+                [33mviewBox[31m=[32m"0 0 24 24"[31m
+                [33mwidth[31m=[32m"24"[31m
+                [33mxmlns[31m=[32m"http://www.w3.org/2000/svg"[31m
+              [36m>[31m
+                [36m<path[31m
+                  [33md[31m=[32m"M13 7 9 3 5 7l4 4"[31m
+                [36m/>[31m
+                [36m<path[31m
+                  [33md[31m=[32m"m17 11 4 4-4 4-4-4"[31m
+                [36m/>[31m
+                [36m<path[31m
+                  [33md[31m=[32m"m8 12 4 4 6-6-4-4Z"[31m
+                [36m/>[31m
+                [36m<path[31m
+                  [33md[31m=[32m"m16 8 3-3"[31m
+                [36m/>[31m
+                [36m<path[31m
+                  [33md[31m=[32m"M9 21a6 6 0 0 0-6-6"[31m
+                [36m/>[31m
+              [36m</svg>[31m
+              [36m<p[31m
+                [33mclass[31m=[32m"text-lg font-medium"[31m
+              [36m>[31m
+                [0mNo imagery ingested yet[0m
+              [36m</p>[31m
+              [36m<p[31m
+                [33mclass[31m=[32m"text-sm text-muted-foreground mb-6"[31m
+              [36m>[31m
+                [0mRun a STAC ingestion job to populate your local catalog.[0m
+              [36m</p>[31m
+              [36m<button[31m
+                [33mclass[31m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"[31m
+              [36m>[31m
+                [0mStart First Ingestion[0m
+              [36m</button>[31m
+            [36m</div>[31m
+          [36m</div>[31m
+        [36m</div>[31m
+      [36m</div>[31m
+    [36m</div>[31m
+  [36m</body>[31m
+[36m</html>[31m[39m
+ [32mΓ£ô[39m src/components/dashboard/ImageryView.test.tsx[2m > [22mImageryView Component[2m > [22mtriggers STAC sync mutation[32m 11[2mms[22m[39m
+
+[31mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»[39m[1m[41m Failed Tests 2 
+[49m[22m[31mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»[39m
+
+[41m[1m FAIL [22m[49m src/components/dashboard/ImageryView.test.tsx[2m > 
+[22mImageryView Component[2m > [22mrenders imagery scenes from MSW
+[31m[1mTestingLibraryElementError[22m[39m: Unable to find an element with 
+the text: 2/1/2024. This could be because the text is broken up by multiple 
+elements. In this case, you can provide a function for your text matcher to 
+make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"space-y-6"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"flex items-center justify-between"[39m
+      [36m>[39m
+        [36m<div>[39m
+          [36m<h2[39m
+            [33mclass[39m=[32m"text-2xl font-bold text-foreground"[39m
+          [36m>[39m
+            [0mSatellite Imagery Catalog[0m
+          [36m</h2>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"text-muted-foreground"[39m
+          [36m>[39m
+            [0mSelect two scenes to perform a comparative scientific analysis 
+(NDVI, NDWI, BSI).[0m
+          [36m</p>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex gap-3"[39m
+        [36m>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"inline-flex items-center justify-center 
+whitespace-nowrap rounded-md text-sm font-medium ring-offset-background 
+transition-colors focus-visible:outline-none focus-visible:ring-2 
+focus-visible:ring-ring focus-visible:ring-offset-2 
+disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none 
+[&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background 
+hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 gap-2"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-refresh-cw w-4 h-4"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 
+2.74L21 8"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M21 3v5h-5"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 
+1-6.74-2.74L3 16"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M8 16H3v5"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [0mSync STAC[0m
+          [36m</button>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"inline-flex items-center justify-center 
+whitespace-nowrap rounded-md text-sm font-medium ring-offset-background 
+transition-colors focus-visible:outline-none focus-visible:ring-2 
+focus-visible:ring-ring focus-visible:ring-offset-2 
+disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none 
+[&_svg]:size-4 [&_svg]:shrink-0 text-primary-foreground h-10 px-4 py-2 gap-2 
+bg-accent hover:bg-accent/90"[39m
+            [33mdisabled[39m=[32m""[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-play w-4 h-4"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<polygon[39m
+                [33mpoints[39m=[32m"6 3 20 12 6 21 6 3"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [0mRun Selected Analysis[0m
+          [36m</button>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"grid grid-cols-1 gap-4"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"rounded-lg border bg-card text-card-foreground 
+shadow-sm border-dashed"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"p-6 py-12 flex flex-col items-center"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-satellite w-12 h-12 
+text-muted-foreground/30 mb-4"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M13 7 9 3 5 7l4 4"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"m17 11 4 4-4 4-4-4"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"m8 12 4 4 6-6-4-4Z"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"m16 8 3-3"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M9 21a6 6 0 0 0-6-6"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"text-lg font-medium"[39m
+            [36m>[39m
+              [0mNo imagery ingested yet[0m
+            [36m</p>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"text-sm text-muted-foreground mb-6"[39m
+            [36m>[39m
+              [0mRun a STAC ingestion job to populate your local catalog.[0m
+            [36m</p>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"inline-flex items-center justify-center 
+gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background 
+transition-colors focus-visible:outline-none focus-visible:ring-2 
+focus-visible:ring-ring focus-visible:ring-offset-2 
+disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none 
+[&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background 
+hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"[39m
+            [36m>[39m
+              [0mStart First Ingestion[0m
+            [36m</button>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+[36m</body>[39m
+
+Ignored nodes: comments, script, style
+[36m<html>[39m
+  [36m<head />[39m
+  [36m<body>[39m
+    [36m<div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"space-y-6"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex items-center justify-between"[39m
+        [36m>[39m
+          [36m<div>[39m
+            [36m<h2[39m
+              [33mclass[39m=[32m"text-2xl font-bold text-foreground"[39m
+            [36m>[39m
+              [0mSatellite Imagery Catalog[0m
+            [36m</h2>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"text-muted-foreground"[39m
+            [36m>[39m
+              [0mSelect two scenes to perform a comparative scientific 
+analysis (NDVI, NDWI, BSI).[0m
+            [36m</p>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"flex gap-3"[39m
+          [36m>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"inline-flex items-center justify-center 
+whitespace-nowrap rounded-md text-sm font-medium ring-offset-background 
+transition-colors focus-visible:outline-none focus-visible:ring-2 
+focus-visible:ring-ring focus-visible:ring-offset-2 
+disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none 
+[&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background 
+hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 gap-2"[39m
+            [36m>[39m
+              [36m<svg[39m
+                [33mclass[39m=[32m"lucide lucide-refresh-cw w-4 h-4"[39m
+                [33mfill[39m=[32m"none"[39m
+                [33mheight[39m=[32m"24"[39m
+                [33mstroke[39m=[32m"currentColor"[39m
+                [33mstroke-linecap[39m=[32m"round"[39m
+                [33mstroke-linejoin[39m=[32m"round"[39m
+                [33mstroke-width[39m=[32m"2"[39m
+                [33mviewBox[39m=[32m"0 0 24 24"[39m
+                [33mwidth[39m=[32m"24"[39m
+                [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+              [36m>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 
+2.74L21 8"[39m
+                [36m/>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"M21 3v5h-5"[39m
+                [36m/>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 
+1-6.74-2.74L3 16"[39m
+                [36m/>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"M8 16H3v5"[39m
+                [36m/>[39m
+              [36m</svg>[39m
+              [0mSync STAC[0m
+            [36m</button>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"inline-flex items-center justify-center 
+whitespace-nowrap rounded-md text-sm font-medium ring-offset-background 
+transition-colors focus-visible:outline-none focus-visible:ring-2 
+focus-visible:ring-ring focus-visible:ring-offset-2 
+disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none 
+[&_svg]:size-4 [&_svg]:shrink-0 text-primary-foreground h-10 px-4 py-2 gap-2 
+bg-accent hover:bg-accent/90"[39m
+              [33mdisabled[39m=[32m""[39m
+            [36m>[39m
+              [36m<svg[39m
+                [33mclass[39m=[32m"lucide lucide-play w-4 h-4"[39m
+                [33mfill[39m=[32m"none"[39m
+                [33mheight[39m=[32m"24"[39m
+                [33mstroke[39m=[32m"currentColor"[39m
+                [33mstroke-linecap[39m=[32m"round"[39m
+                [33mstroke-linejoin[39m=[32m"round"[39m
+                [33mstroke-width[39m=[32m"2"[39m
+                [33mviewBox[39m=[32m"0 0 24 24"[39m
+                [33mwidth[39m=[32m"24"[39m
+                [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+              [36m>[39m
+                [36m<polygon[39m
+                  [33mpoints[39m=[32m"6 3 20 12 6 21 6 3"[39m
+                [36m/>[39m
+              [36m</svg>[39m
+              [0mRun Selected Analysis[0m
+            [36m</button>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"grid grid-cols-1 gap-4"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"rounded-lg border bg-card 
+text-card-foreground shadow-sm border-dashed"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"p-6 py-12 flex flex-col items-center"[39m
+            [36m>[39m
+              [36m<svg[39m
+                [33mclass[39m=[32m"lucide lucide-satellite w-12 h-12 
+text-muted-foreground/30 mb-4"[39m
+                [33mfill[39m=[32m"none"[39m
+                [33mheight[39m=[32m"24"[39m
+                [33mstroke[39m=[32m"currentColor"[39m
+                [33mstroke-linecap[39m=[32m"round"[39m
+                [33mstroke-linejoin[39m=[32m"round"[39m
+                [33mstroke-width[39m=[32m"2"[39m
+                [33mviewBox[39m=[32m"0 0 24 24"[39m
+                [33mwidth[39m=[32m"24"[39m
+                [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+              [36m>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"M13 7 9 3 5 7l4 4"[39m
+                [36m/>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"m17 11 4 4-4 4-4-4"[39m
+                [36m/>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"m8 12 4 4 6-6-4-4Z"[39m
+                [36m/>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"m16 8 3-3"[39m
+                [36m/>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"M9 21a6 6 0 0 0-6-6"[39m
+                [36m/>[39m
+              [36m</svg>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"text-lg font-medium"[39m
+              [36m>[39m
+                [0mNo imagery ingested yet[0m
+              [36m</p>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"text-sm text-muted-foreground mb-6"[39m
+              [36m>[39m
+                [0mRun a STAC ingestion job to populate your local catalog.[0m
+              [36m</p>[39m
+              [36m<button[39m
+                [33mclass[39m=[32m"inline-flex items-center justify-center 
+gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background 
+transition-colors focus-visible:outline-none focus-visible:ring-2 
+focus-visible:ring-ring focus-visible:ring-offset-2 
+disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none 
+[&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background 
+hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"[39m
+              [36m>[39m
+                [0mStart First Ingestion[0m
+              [36m</button>[39m
+            [36m</div>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+    [36m</div>[39m
+  [36m</body>[39m
+[36m</html>[39m
+[90m [2mΓ¥»[22m Module.waitFor 
+node_modules/@testing-library/dom/dist/wait-for.js:[2m163:27[22m[39m
+[36m [2mΓ¥»[22m 
+src/components/dashboard/ImageryView.test.tsx:[2m14:15[22m[39m
+    [90m 12| [39m        [34mrender[39m([33m<[39m[33mImageryView[39m 
+[33m/[39m[33m>[39m)[33m;[39m
+    [90m 13| [39m
+    [90m 14| [39m        [35mawait[39m [34mwaitFor[39m(() [33m=>[39m {
+    [90m   | [39m              [31m^[39m
+    [90m 15| [39m            [90m// Check for date from MSW handler 
+Scene[39m
+    [90m 16| [39m            [34mexpect[39m(screen[33m.[39m[34mgetByText
+[39m([32m'2/1/2024'[39m))[33m.[39m[34mtoBeInTheDocument[39m()[33m;[39m
+
+[31m[2mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ
+»[1/2]ΓÄ»[22m[39m
+
+[41m[1m FAIL [22m[49m src/components/dashboard/ImageryView.test.tsx[2m > 
+[22mImageryView Component[2m > [22mallows selecting baseline and latest 
+scenes
+[31m[1mTestingLibraryElementError[22m[39m: Unable to find an element with 
+the text: 2/1/2024. This could be because the text is broken up by multiple 
+elements. In this case, you can provide a function for your text matcher to 
+make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"space-y-6"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"flex items-center justify-between"[39m
+      [36m>[39m
+        [36m<div>[39m
+          [36m<h2[39m
+            [33mclass[39m=[32m"text-2xl font-bold text-foreground"[39m
+          [36m>[39m
+            [0mSatellite Imagery Catalog[0m
+          [36m</h2>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"text-muted-foreground"[39m
+          [36m>[39m
+            [0mSelect two scenes to perform a comparative scientific analysis 
+(NDVI, NDWI, BSI).[0m
+          [36m</p>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex gap-3"[39m
+        [36m>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"inline-flex items-center justify-center 
+whitespace-nowrap rounded-md text-sm font-medium ring-offset-background 
+transition-colors focus-visible:outline-none focus-visible:ring-2 
+focus-visible:ring-ring focus-visible:ring-offset-2 
+disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none 
+[&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background 
+hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 gap-2"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-refresh-cw w-4 h-4"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 
+2.74L21 8"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M21 3v5h-5"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 
+1-6.74-2.74L3 16"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M8 16H3v5"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [0mSync STAC[0m
+          [36m</button>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"inline-flex items-center justify-center 
+whitespace-nowrap rounded-md text-sm font-medium ring-offset-background 
+transition-colors focus-visible:outline-none focus-visible:ring-2 
+focus-visible:ring-ring focus-visible:ring-offset-2 
+disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none 
+[&_svg]:size-4 [&_svg]:shrink-0 text-primary-foreground h-10 px-4 py-2 gap-2 
+bg-accent hover:bg-accent/90"[39m
+            [33mdisabled[39m=[32m""[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-play w-4 h-4"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<polygon[39m
+                [33mpoints[39m=[32m"6 3 20 12 6 21 6 3"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [0mRun Selected Analysis[0m
+          [36m</button>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"grid grid-cols-1 gap-4"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"rounded-lg border bg-card text-card-foreground 
+shadow-sm border-dashed"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"p-6 py-12 flex flex-col items-center"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-satellite w-12 h-12 
+text-muted-foreground/30 mb-4"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M13 7 9 3 5 7l4 4"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"m17 11 4 4-4 4-4-4"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"m8 12 4 4 6-6-4-4Z"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"m16 8 3-3"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M9 21a6 6 0 0 0-6-6"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"text-lg font-medium"[39m
+            [36m>[39m
+              [0mNo imagery ingested yet[0m
+            [36m</p>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"text-sm text-muted-foreground mb-6"[39m
+            [36m>[39m
+              [0mRun a STAC ingestion job to populate your local catalog.[0m
+            [36m</p>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"inline-flex items-center justify-center 
+gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background 
+transition-colors focus-visible:outline-none focus-visible:ring-2 
+focus-visible:ring-ring focus-visible:ring-offset-2 
+disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none 
+[&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background 
+hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"[39m
+            [36m>[39m
+              [0mStart First Ingestion[0m
+            [36m</button>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+[36m</body>[39m
+
+Ignored nodes: comments, script, style
+[36m<html>[39m
+  [36m<head />[39m
+  [36m<body>[39m
+    [36m<div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"space-y-6"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex items-center justify-between"[39m
+        [36m>[39m
+          [36m<div>[39m
+            [36m<h2[39m
+              [33mclass[39m=[32m"text-2xl font-bold text-foreground"[39m
+            [36m>[39m
+              [0mSatellite Imagery Catalog[0m
+            [36m</h2>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"text-muted-foreground"[39m
+            [36m>[39m
+              [0mSelect two scenes to perform a comparative scientific 
+analysis (NDVI, NDWI, BSI).[0m
+            [36m</p>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"flex gap-3"[39m
+          [36m>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"inline-flex items-center justify-center 
+whitespace-nowrap rounded-md text-sm font-medium ring-offset-background 
+transition-colors focus-visible:outline-none focus-visible:ring-2 
+focus-visible:ring-ring focus-visible:ring-offset-2 
+disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none 
+[&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background 
+hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 gap-2"[39m
+            [36m>[39m
+              [36m<svg[39m
+                [33mclass[39m=[32m"lucide lucide-refresh-cw w-4 h-4"[39m
+                [33mfill[39m=[32m"none"[39m
+                [33mheight[39m=[32m"24"[39m
+                [33mstroke[39m=[32m"currentColor"[39m
+                [33mstroke-linecap[39m=[32m"round"[39m
+                [33mstroke-linejoin[39m=[32m"round"[39m
+                [33mstroke-width[39m=[32m"2"[39m
+                [33mviewBox[39m=[32m"0 0 24 24"[39m
+                [33mwidth[39m=[32m"24"[39m
+                [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+              [36m>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 
+2.74L21 8"[39m
+                [36m/>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"M21 3v5h-5"[39m
+                [36m/>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 
+1-6.74-2.74L3 16"[39m
+                [36m/>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"M8 16H3v5"[39m
+                [36m/>[39m
+              [36m</svg>[39m
+              [0mSync STAC[0m
+            [36m</button>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"inline-flex items-center justify-center 
+whitespace-nowrap rounded-md text-sm font-medium ring-offset-background 
+transition-colors focus-visible:outline-none focus-visible:ring-2 
+focus-visible:ring-ring focus-visible:ring-offset-2 
+disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none 
+[&_svg]:size-4 [&_svg]:shrink-0 text-primary-foreground h-10 px-4 py-2 gap-2 
+bg-accent hover:bg-accent/90"[39m
+              [33mdisabled[39m=[32m""[39m
+            [36m>[39m
+              [36m<svg[39m
+                [33mclass[39m=[32m"lucide lucide-play w-4 h-4"[39m
+                [33mfill[39m=[32m"none"[39m
+                [33mheight[39m=[32m"24"[39m
+                [33mstroke[39m=[32m"currentColor"[39m
+                [33mstroke-linecap[39m=[32m"round"[39m
+                [33mstroke-linejoin[39m=[32m"round"[39m
+                [33mstroke-width[39m=[32m"2"[39m
+                [33mviewBox[39m=[32m"0 0 24 24"[39m
+                [33mwidth[39m=[32m"24"[39m
+                [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+              [36m>[39m
+                [36m<polygon[39m
+                  [33mpoints[39m=[32m"6 3 20 12 6 21 6 3"[39m
+                [36m/>[39m
+              [36m</svg>[39m
+              [0mRun Selected Analysis[0m
+            [36m</button>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"grid grid-cols-1 gap-4"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"rounded-lg border bg-card 
+text-card-foreground shadow-sm border-dashed"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"p-6 py-12 flex flex-col items-center"[39m
+            [36m>[39m
+              [36m<svg[39m
+                [33mclass[39m=[32m"lucide lucide-satellite w-12 h-12 
+text-muted-foreground/30 mb-4"[39m
+                [33mfill[39m=[32m"none"[39m
+                [33mheight[39m=[32m"24"[39m
+                [33mstroke[39m=[32m"currentColor"[39m
+                [33mstroke-linecap[39m=[32m"round"[39m
+                [33mstroke-linejoin[39m=[32m"round"[39m
+                [33mstroke-width[39m=[32m"2"[39m
+                [33mviewBox[39m=[32m"0 0 24 24"[39m
+                [33mwidth[39m=[32m"24"[39m
+                [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+              [36m>[39m
+                [36m<path[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m2 passed[39m[22m[90m (4)[39m
+[2m   Start at [22m 16:18:57
+[2m   Duration [22m 3.28s[2m (transform 71ms, setup 188ms, collect 173ms, tests 2.10s, environment 325ms, prepare 61ms)[22m
+
+                  [33md[39m=[32m"M13 7 9 3 5 7l4 4"[39m
+                [36m/>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"m17 11 4 4-4 4-4-4"[39m
+                [36m/>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"m8 12 4 4 6-6-4-4Z"[39m
+                [36m/>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"m16 8 3-3"[39m
+                [36m/>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"M9 21a6 6 0 0 0-6-6"[39m
+                [36m/>[39m
+              [36m</svg>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"text-lg font-medium"[39m
+              [36m>[39m
+                [0mNo imagery ingested yet[0m
+              [36m</p>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"text-sm text-muted-foreground mb-6"[39m
+              [36m>[39m
+                [0mRun a STAC ingestion job to populate your local catalog.[0m
+              [36m</p>[39m
+              [36m<button[39m
+                [33mclass[39m=[32m"inline-flex items-center justify-center 
+gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background 
+transition-colors focus-visible:outline-none focus-visible:ring-2 
+focus-visible:ring-ring focus-visible:ring-offset-2 
+disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none 
+[&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background 
+hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"[39m
+              [36m>[39m
+                [0mStart First Ingestion[0m
+              [36m</button>[39m
+            [36m</div>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+    [36m</div>[39m
+  [36m</body>[39m
+[36m</html>[39m
+[90m [2mΓ¥»[22m Module.waitFor 
+node_modules/@testing-library/dom/dist/wait-for.js:[2m163:27[22m[39m
+[36m [2mΓ¥»[22m 
+src/components/dashboard/ImageryView.test.tsx:[2m24:15[22m[39m
+    [90m 22| [39m        [34mrender[39m([33m<[39m[33mImageryView[39m 
+[33m/[39m[33m>[39m)[33m;[39m
+    [90m 23| [39m
+    [90m 24| [39m        [35mawait[39m [34mwaitFor[39m(() [33m=>[39m {
+    [90m   | [39m              [31m^[39m
+    [90m 25| [39m            [34mexpect[39m(screen[33m.[39m[34mgetByText
+[39m([32m'2/1/2024'[39m))[33m.[39m[34mtoBeInTheDocument[39m()[33m;[39m
+    [90m 26| [39m        })[33m;[39m
+
+[31m[2mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ
+»[2/2]ΓÄ»[22m[39m
+

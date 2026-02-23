@@ -1,0 +1,788 @@
+﻿
+> vite_react_shadcn_ts@0.0.0 test
+> vitest run --reporter=verbose
+
+
+[1m[46m RUN [49m[22m [36mv3.2.4 [39m[90mC:/Users/Samson Adeyomoye/Documents/mine-watcher-main[39m
+
+ [32mΓ£ô[39m src/test/example.test.ts[2m > [22mexample[2m > [22mshould pass[32m 1[2mms[22m[39m
+node.exe : [90mstderr[2m | src/components/dashboard/Dashboard.test.tsx[2m > 
+[22m[2mDashboard Component[2m > [22m[2mrenders the dashboard with site name
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Users\Samson Adeyomoye\AppDa ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([90mstderr[2m... with site name: 
+   String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+[22m[39mError: Uncaught [TypeError: Cannot read properties of undefined 
+(reading 'bg')]
+    at reportException (C:\Users\Samson Adeyomoye\Documents\mine-watcher-main\no
+de_modules\jsdom\lib\jsdom\living\helpers\runtime-script-errors.js:66:24)
+    at innerInvokeEventListeners (C:\Users\Samson Adeyomoye\Documents\mine-watch
+er-main\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js:353:9)
+    at invokeEventListeners (C:\Users\Samson Adeyomoye\Documents\mine-watcher-ma
+in\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js:286:3)
+    at HTMLUnknownElementImpl._dispatch (C:\Users\Samson Adeyomoye\Documents\min
+e-watcher-main\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js:23
+3:9)
+    at HTMLUnknownElementImpl.dispatchEvent (C:\Users\Samson Adeyomoye\Documents
+\mine-watcher-main\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.j
+s:104:17)
+    at HTMLUnknownElement.dispatchEvent (C:\Users\Samson Adeyomoye\Documents\min
+e-watcher-main\node_modules\jsdom\lib\jsdom\living\generated\EventTarget.js:241:
+34)
+    at Object.invokeGuardedCallbackDev (C:\Users\Samson Adeyomoye\Documents\mine
+-watcher-main\node_modules\react-dom\cjs\react-dom.development.js:4213:16)
+    at invokeGuardedCallback (C:\Users\Samson Adeyomoye\Documents\mine-watcher-m
+ain\node_modules\react-dom\cjs\react-dom.development.js:4277:31)
+    at beginWork$1 (C:\Users\Samson Adeyomoye\Documents\mine-watcher-main\node_m
+odules\react-dom\cjs\react-dom.development.js:27490:7)
+    at performUnitOfWork (C:\Users\Samson Adeyomoye\Documents\mine-watcher-main\
+node_modules\react-dom\cjs\react-dom.development.js:26599:12) TypeError: Cannot 
+read properties of undefined (reading 'bg')
+    at AlertItem [90m(C:\Users\Samson Adeyomoye\Documents\mine-watcher-main\[3
+9msrc\components\dashboard\AlertItem.tsx:68:16[90m)[39m
+    at renderWithHooks [90m(C:\Users\Samson Adeyomoye\Documents\mine-watcher-ma
+in\[39mnode_modules\[4mreact-dom[24m\cjs\react-dom.development.js:15486:18[9
+0m)[39m
+    at mountIndeterminateComponent [90m(C:\Users\Samson Adeyomoye\Documents\min
+e-watcher-main\[39mnode_modules\[4mreact-dom[24m\cjs\react-dom.development.js
+:20103:13[90m)[39m
+    at beginWork [90m(C:\Users\Samson Adeyomoye\Documents\mine-watcher-main\[3
+9mnode_modules\[4mreact-dom[24m\cjs\react-dom.development.js:21626:16[90m)[3
+9m
+    at HTMLUnknownElement.callCallback [90m(C:\Users\Samson Adeyomoye\Documents
+\mine-watcher-main\[39mnode_modules\[4mreact-dom[24m\cjs\react-dom.developmen
+t.js:4164:14[90m)[39m
+    at HTMLUnknownElement.callTheUserObjectsOperation [90m(C:\Users\Samson Adey
+omoye\Documents\mine-watcher-main\[39mnode_modules\[4mjsdom[24m\lib\jsdom\liv
+ing\generated\EventListener.js:26:30[90m)[39m
+    at innerInvokeEventListeners [90m(C:\Users\Samson Adeyomoye\Documents\mine-
+watcher-main\[39mnode_modules\[4mjsdom[24m\lib\jsdom\living\events\EventTarge
+t-impl.js:350:25[90m)[39m
+    at invokeEventListeners [90m(C:\Users\Samson Adeyomoye\Documents\mine-watch
+er-main\[39mnode_modules\[4mjsdom[24m\lib\jsdom\living\events\EventTarget-imp
+l.js:286:3[90m)[39m
+    at HTMLUnknownElementImpl._dispatch [90m(C:\Users\Samson Adeyomoye\Document
+s\mine-watcher-main\[39mnode_modules\[4mjsdom[24m\lib\jsdom\living\events\Eve
+ntTarget-impl.js:233:9[90m)[39m
+    at HTMLUnknownElementImpl.dispatchEvent [90m(C:\Users\Samson Adeyomoye\Docu
+ments\mine-watcher-main\[39mnode_modules\[4mjsdom[24m\lib\jsdom\living\events
+\EventTarget-impl.js:104:17[90m)[39m
+Error: Uncaught [TypeError: Cannot read properties of undefined (reading 'bg')]
+    at reportException (C:\Users\Samson Adeyomoye\Documents\mine-watcher-main\no
+de_modules\jsdom\lib\jsdom\living\helpers\runtime-script-errors.js:66:24)
+    at innerInvokeEventListeners (C:\Users\Samson Adeyomoye\Documents\mine-watch
+er-main\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js:353:9)
+    at invokeEventListeners (C:\Users\Samson Adeyomoye\Documents\mine-watcher-ma
+in\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js:286:3)
+    at HTMLUnknownElementImpl._dispatch (C:\Users\Samson Adeyomoye\Documents\min
+e-watcher-main\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js:23
+3:9)
+    at HTMLUnknownElementImpl.dispatchEvent (C:\Users\Samson Adeyomoye\Documents
+\mine-watcher-main\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.j
+s:104:17)
+    at HTMLUnknownElement.dispatchEvent (C:\Users\Samson Adeyomoye\Documents\min
+e-watcher-main\node_modules\jsdom\lib\jsdom\living\generated\EventTarget.js:241:
+34)
+    at Object.invokeGuardedCallbackDev (C:\Users\Samson Adeyomoye\Documents\mine
+-watcher-main\node_modules\react-dom\cjs\react-dom.development.js:4213:16)
+    at invokeGuardedCallback (C:\Users\Samson Adeyomoye\Documents\mine-watcher-m
+ain\node_modules\react-dom\cjs\react-dom.development.js:4277:31)
+    at beginWork$1 (C:\Users\Samson Adeyomoye\Documents\mine-watcher-main\node_m
+odules\react-dom\cjs\react-dom.development.js:27490:7)
+    at performUnitOfWork (C:\Users\Samson Adeyomoye\Documents\mine-watcher-main\
+node_modules\react-dom\cjs\react-dom.development.js:26599:12) TypeError: Cannot 
+read properties of undefined (reading 'bg')
+    at AlertItem [90m(C:\Users\Samson Adeyomoye\Documents\mine-watcher-main\[3
+9msrc\components\dashboard\AlertItem.tsx:68:16[90m)[39m
+    at renderWithHooks [90m(C:\Users\Samson Adeyomoye\Documents\mine-watcher-ma
+in\[39mnode_modules\[4mreact-dom[24m\cjs\react-dom.development.js:15486:18[9
+0m)[39m
+    at mountIndeterminateComponent [90m(C:\Users\Samson Adeyomoye\Documents\min
+e-watcher-main\[39mnode_modules\[4mreact-dom[24m\cjs\react-dom.development.js
+:20103:13[90m)[39m
+    at beginWork [90m(C:\Users\Samson Adeyomoye\Documents\mine-watcher-main\[3
+9mnode_modules\[4mreact-dom[24m\cjs\react-dom.development.js:21626:16[90m)[3
+9m
+    at HTMLUnknownElement.callCallback [90m(C:\Users\Samson Adeyomoye\Documents
+\mine-watcher-main\[39mnode_modules\[4mreact-dom[24m\cjs\react-dom.developmen
+t.js:4164:14[90m)[39m
+    at HTMLUnknownElement.callTheUserObjectsOperation [90m(C:\Users\Samson Adey
+omoye\Documents\mine-watcher-main\[39mnode_modules\[4mjsdom[24m\lib\jsdom\liv
+ing\generated\EventListener.js:26:30[90m)[39m
+    at innerInvokeEventListeners [90m(C:\Users\Samson Adeyomoye\Documents\mine-
+watcher-main\[39mnode_modules\[4mjsdom[24m\lib\jsdom\living\events\EventTarge
+t-impl.js:350:25[90m)[39m
+    at invokeEventListeners [90m(C:\Users\Samson Adeyomoye\Documents\mine-watch
+er-main\[39mnode_modules\[4mjsdom[24m\lib\jsdom\living\events\EventTarget-imp
+l.js:286:3[90m)[39m
+    at HTMLUnknownElementImpl._dispatch [90m(C:\Users\Samson Adeyomoye\Document
+s\mine-watcher-main\[39mnode_modules\[4mjsdom[24m\lib\jsdom\living\events\Eve
+ntTarget-impl.js:233:9[90m)[39m
+    at HTMLUnknownElementImpl.dispatchEvent [90m(C:\Users\Samson Adeyomoye\Docu
+ments\mine-watcher-main\[39mnode_modules\[4mjsdom[24m\lib\jsdom\living\events
+\EventTarget-impl.js:104:17[90m)[39m
+The above error occurred in the <AlertItem> component:
+
+    at AlertItem (C:\Users\Samson Adeyomoye\Documents\mine-watcher-main\src\comp
+onents\dashboard\AlertItem.tsx:36:22)
+    at div
+    at div
+    at C:\Users\Samson 
+Adeyomoye\Documents\mine-watcher-main\src\test\setup.ts:3:30
+    at div
+    at div
+    at main
+    at div
+    at Dashboard (C:\Users\Samson Adeyomoye\Documents\mine-watcher-main\src\comp
+onents\dashboard\Dashboard.tsx:88:61)
+    at QueryClientProvider (file:///C:/Users/Samson%20Adeyomoye/Documents/mine-w
+atcher-main/node_modules/@tanstack/react-query/build/modern/QueryClientProvider.
+js:20:3)
+    at AllTheProviders (C:\Users\Samson 
+Adeyomoye\Documents\mine-watcher-main\src\test\utils.tsx:14:28)
+
+Consider adding an error boundary to your tree to customize error handling 
+behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error 
+boundaries.
+
+[90mstderr[2m | src/components/dashboard/Dashboard.test.tsx[2m > 
+[22m[2mDashboard Component[2m > [22m[2mdisplays the stats cards with mock 
+data
+[22m[39mError: Uncaught [TypeError: Cannot read properties of undefined 
+(reading 'bg')]
+    at reportException (C:\Users\Samson Adeyomoye\Documents\mine-watcher-main\no
+de_modules\jsdom\lib\jsdom\living\helpers\runtime-script-errors.js:66:24)
+    at innerInvokeEventListeners (C:\Users\Samson Adeyomoye\Documents\mine-watch
+er-main\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js:353:9)
+    at invokeEventListeners (C:\Users\Samson Adeyomoye\Documents\mine-watcher-ma
+in\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js:286:3)
+    at HTMLUnknownElementImpl._dispatch (C:\Users\Samson Adeyomoye\Documents\min
+e-watcher-main\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js:23
+3:9)
+    at HTMLUnknownElementImpl.dispatchEvent (C:\Users\Samson Adeyomoye\Documents
+\mine-watcher-main\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.j
+s:104:17)
+    at HTMLUnknownElement.dispatchEvent (C:\Users\Samson Adeyomoye\Documents\min
+e-watcher-main\node_modules\jsdom\lib\jsdom\living\generated\EventTarget.js:241:
+34)
+    at Object.invokeGuardedCallbackDev (C:\Users\Samson Adeyomoye\Documents\mine
+-watcher-main\node_modules\react-dom\cjs\react-dom.development.js:4213:16)
+    at invokeGuardedCallback (C:\Users\Samson Adeyomoye\Documents\mine-watcher-m
+ain\node_modules\react-dom\cjs\react-dom.development.js:4277:31)
+    at beginWork$1 (C:\Users\Samson Adeyomoye\Documents\mine-watcher-main\node_m
+odules\react-dom\cjs\react-dom.development.js:27490:7)
+    at performUnitOfWork (C:\Users\Samson Adeyomoye\Documents\mine-watcher-main\
+node_modules\react-dom\cjs\react-dom.development.js:26599:12) TypeError: Cannot 
+read properties of undefined (reading 'bg')
+    at AlertItem [90m(C:\Users\Samson Adeyomoye\Documents\mine-watcher-main\[3
+9msrc\components\dashboard\AlertItem.tsx:68:16[90m)[39m
+    at renderWithHooks [90m(C:\Users\Samson Adeyomoye\Documents\mine-watcher-ma
+in\[39mnode_modules\[4mreact-dom[24m\cjs\react-dom.development.js:15486:18[9
+0m)[39m
+    at mountIndeterminateComponent [90m(C:\Users\Samson Adeyomoye\Documents\min
+e-watcher-main\[39mnode_modules\[4mreact-dom[24m\cjs\react-dom.development.js
+:20103:13[90m)[39m
+    at beginWork [90m(C:\Users\Samson Adeyomoye\Documents\mine-watcher-main\[3
+9mnode_modules\[4mreact-dom[24m\cjs\react-dom.development.js:21626:16[90m)[3
+9m
+    at HTMLUnknownElement.callCallback [90m(C:\Users\Samson Adeyomoye\Documents
+\mine-watcher-main\[39mnode_modules\[4mreact-dom[24m\cjs\react-dom.developmen
+t.js:4164:14[90m)[39m
+    at HTMLUnknownElement.callTheUserObjectsOperation [90m(C:\Users\Samson Adey
+omoye\Documents\mine-watcher-main\[39mnode_modules\[4mjsdom[24m\lib\jsdom\liv
+ing\generated\EventListener.js:26:30[90m)[39m
+    at innerInvokeEventListeners [90m(C:\Users\Samson Adeyomoye\Documents\mine-
+watcher-main\[39mnode_modules\[4mjsdom[24m\lib\jsdom\living\events\EventTarge
+t-impl.js:350:25[90m)[39m
+    at invokeEventListeners [90m(C:\Users\Samson Adeyomoye\Documents\mine-watch
+er-main\[39mnode_modules\[4mjsdom[24m\lib\jsdom\living\events\EventTarget-imp
+l.js:286:3[90m)[39m
+    at HTMLUnknownElementImpl._dispatch [90m(C:\Users\Samson Adeyomoye\Document
+s\mine-watcher-main\[39mnode_modules\[4mjsdom[24m\lib\jsdom\living\events\Eve
+ntTarget-impl.js:233:9[90m)[39m
+    at HTMLUnknownElementImpl.dispatchEvent [90m(C:\Users\Samson Adeyomoye\Docu
+ments\mine-watcher-main\[39mnode_modules\[4mjsdom[24m\lib\jsdom\living\events
+\EventTarget-impl.js:104:17[90m)[39m
+Error: Uncaught [TypeError: Cannot read properties of undefined (reading 'bg')]
+    at reportException (C:\Users\Samson Adeyomoye\Documents\mine-watcher-main\no
+de_modules\jsdom\lib\jsdom\living\helpers\runtime-script-errors.js:66:24)
+    at innerInvokeEventListeners (C:\Users\Samson Adeyomoye\Documents\mine-watch
+er-main\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js:353:9)
+    at invokeEventListeners (C:\Users\Samson Adeyomoye\Documents\mine-watcher-ma
+in\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js:286:3)
+    at HTMLUnknownElementImpl._dispatch (C:\Users\Samson Adeyomoye\Documents\min
+e-watcher-main\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js:23
+3:9)
+    at HTMLUnknownElementImpl.dispatchEvent (C:\Users\Samson Adeyomoye\Documents
+\mine-watcher-main\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.j
+s:104:17)
+    at HTMLUnknownElement.dispatchEvent (C:\Users\Samson Adeyomoye\Documents\min
+e-watcher-main\node_modules\jsdom\lib\jsdom\living\generated\EventTarget.js:241:
+34)
+    at Object.invokeGuardedCallbackDev (C:\Users\Samson Adeyomoye\Documents\mine
+-watcher-main\node_modules\react-dom\cjs\react-dom.development.js:4213:16)
+    at invokeGuardedCallback (C:\Users\Samson Adeyomoye\Documents\mine-watcher-m
+ain\node_modules\react-dom\cjs\react-dom.development.js:4277:31)
+    at beginWork$1 (C:\Users\Samson Adeyomoye\Documents\mine-watcher-main\node_m
+odules\react-dom\cjs\react-dom.development.js:27490:7)
+    at performUnitOfWork (C:\Users\Samson Adeyomoye\Documents\mine-watcher-main\
+node_modules\react-dom\cjs\react-dom.development.js:26599:12) TypeError: Cannot 
+read properties of undefined (reading 'bg')
+    at AlertItem [90m(C:\Users\Samson Adeyomoye\Documents\mine-watcher-main\[3
+9msrc\components\dashboard\AlertItem.tsx:68:16[90m)[39m
+    at renderWithHooks [90m(C:\Users\Samson Adeyomoye\Documents\mine-watcher-ma
+in\[39mnode_modules\[4mreact-dom[24m\cjs\react-dom.development.js:15486:18[9
+0m)[39m
+    at mountIndeterminateComponent [90m(C:\Users\Samson Adeyomoye\Documents\min
+e-watcher-main\[39mnode_modules\[4mreact-dom[24m\cjs\react-dom.development.js
+:20103:13[90m)[39m
+    at beginWork [90m(C:\Users\Samson Adeyomoye\Documents\mine-watcher-main\[3
+9mnode_modules\[4mreact-dom[24m\cjs\react-dom.development.js:21626:16[90m)[3
+9m
+    at HTMLUnknownElement.callCallback [90m(C:\Users\Samson Adeyomoye\Documents
+\mine-watcher-main\[39mnode_modules\[4mreact-dom[24m\cjs\react-dom.developmen
+t.js:4164:14[90m)[39m
+    at HTMLUnknownElement.callTheUserObjectsOperation [90m(C:\Users\Samson Adey
+omoye\Documents\mine-watcher-main\[39mnode_modules\[4mjsdom[24m\lib\jsdom\liv
+ing\generated\EventListener.js:26:30[90m)[39m
+    at innerInvokeEventListeners [90m(C:\Users\Samson Adeyomoye\Documents\mine-
+watcher-main\[39mnode_modules\[4mjsdom[24m\lib\jsdom\living\events\EventTarge
+t-impl.js:350:25[90m)[39m
+    at invokeEventListeners [90m(C:\Users\Samson Adeyomoye\Documents\mine-watch
+er-main\[39mnode_modules\[4mjsdom[24m\lib\jsdom\living\events\EventTarget-imp
+l.js:286:3[90m)[39m
+    at HTMLUnknownElementImpl._dispatch [90m(C:\Users\Samson Adeyomoye\Document
+s\mine-watcher-main\[39mnode_modules\[4mjsdom[24m\lib\jsdom\living\events\Eve
+ntTarget-impl.js:233:9[90m)[39m
+    at HTMLUnknownElementImpl.dispatchEvent [90m(C:\Users\Samson Adeyomoye\Docu
+ments\mine-watcher-main\[39mnode_modules\[4mjsdom[24m\lib\jsdom\living\events
+\EventTarget-impl.js:104:17[90m)[39m
+The above error occurred in the <AlertItem> component:
+
+    at AlertItem (C:\Users\Samson Adeyomoye\Documents\mine-watcher-main\src\comp
+onents\dashboard\AlertItem.tsx:36:22)
+    at div
+    at div
+    at C:\Users\Samson 
+Adeyomoye\Documents\mine-watcher-main\src\test\setup.ts:3:30
+    at div
+    at div
+    at main
+    at div
+    at Dashboard (C:\Users\Samson Adeyomoye\Documents\mine-watcher-main\src\comp
+onents\dashboard\Dashboard.tsx:88:61)
+    at QueryClientProvider (file:///C:/Users/Samson%20Adeyomoye/Documents/mine-w
+atcher-main/node_modules/@tanstack/react-query/build/modern/QueryClientProvider.
+js:20:3)
+    at AllTheProviders (C:\Users\Samson 
+Adeyomoye\Documents\mine-watcher-main\src\test\utils.tsx:14:28)
+
+Consider adding an error boundary to your tree to customize error handling 
+behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error 
+boundaries.
+
+[90mstdout[2m | src/components/dashboard/Dashboard.test.tsx[2m > [22m[2mDashboard Component[2m > [22m[2mdisplays the stats cards with mock data
+[22m[39mDEBUG: Dashboard render failed to show Mock Mine. Current HTML:
+
+
+ [31m├ù[39m src/components/dashboard/Dashboard.test.tsx[2m > [22mDashboard Component[2m > [22mrenders the dashboard with site name[33m 5010[2mms[22m[39m
+[31m   ΓåÆ Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".[39m
+[90mstderr[2m | src/components/dashboard/Dashboard.test.tsx[2m > 
+[22m[2mDashboard Component[2m > [22m[2mrenders the map view container
+[22m[39mError: Uncaught [TypeError: Cannot read properties of undefined 
+(reading 'bg')]
+    at reportException (C:\Users\Samson Adeyomoye\Documents\mine-watcher-main\no
+de_modules\jsdom\lib\jsdom\living\helpers\runtime-script-errors.js:66:24)
+    at innerInvokeEventListeners (C:\Users\Samson Adeyomoye\Documents\mine-watch
+er-main\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js:353:9)
+    at invokeEventListeners (C:\Users\Samson Adeyomoye\Documents\mine-watcher-ma
+in\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js:286:3)
+    at HTMLUnknownElementImpl._dispatch (C:\Users\Samson Adeyomoye\Documents\min
+e-watcher-main\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js:23
+3:9)
+    at HTMLUnknownElementImpl.dispatchEvent (C:\Users\Samson Adeyomoye\Documents
+\mine-watcher-main\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.j
+s:104:17)
+    at HTMLUnknownElement.dispatchEvent (C:\Users\Samson Adeyomoye\Documents\min
+e-watcher-main\node_modules\jsdom\lib\jsdom\living\generated\EventTarget.js:241:
+34)
+    at Object.invokeGuardedCallbackDev (C:\Users\Samson Adeyomoye\Documents\mine
+-watcher-main\node_modules\react-dom\cjs\react-dom.development.js:4213:16)
+    at invokeGuardedCallback (C:\Users\Samson Adeyomoye\Documents\mine-watcher-m
+ain\node_modules\react-dom\cjs\react-dom.development.js:4277:31)
+    at beginWork$1 (C:\Users\Samson Adeyomoye\Documents\mine-watcher-main\node_m
+odules\react-dom\cjs\react-dom.development.js:27490:7)
+    at performUnitOfWork (C:\Users\Samson Adeyomoye\Documents\mine-watcher-main\
+node_modules\react-dom\cjs\react-dom.development.js:26599:12) TypeError: Cannot 
+read properties of undefined (reading 'bg')
+    at AlertItem [90m(C:\Users\Samson Adeyomoye\Documents\mine-watcher-main\[3
+9msrc\components\dashboard\AlertItem.tsx:68:16[90m)[39m
+    at renderWithHooks [90m(C:\Users\Samson Adeyomoye\Documents\mine-watcher-ma
+in\[39mnode_modules\[4mreact-dom[24m\cjs\react-dom.development.js:15486:18[9
+0m)[39m
+    at mountIndeterminateComponent [90m(C:\Users\Samson Adeyomoye\Documents\min
+e-watcher-main\[39mnode_modules\[4mreact-dom[24m\cjs\react-dom.development.js
+:20103:13[90m)[39m
+    at beginWork [90m(C:\Users\Samson Adeyomoye\Documents\mine-watcher-main\[3
+9mnode_modules\[4mreact-dom[24m\cjs\react-dom.development.js:21626:16[90m)[3
+9m
+    at HTMLUnknownElement.callCallback [90m(C:\Users\Samson Adeyomoye\Documents
+\mine-watcher-main\[39mnode_modules\[4mreact-dom[24m\cjs\react-dom.developmen
+t.js:4164:14[90m)[39m
+    at HTMLUnknownElement.callTheUserObjectsOperation [90m(C:\Users\Samson Adey
+omoye\Documents\mine-watcher-main\[39mnode_modules\[4mjsdom[24m\lib\jsdom\liv
+ing\generated\EventListener.js:26:30[90m)[39m
+    at innerInvokeEventListeners [90m(C:\Users\Samson Adeyomoye\Documents\mine-
+watcher-main\[39mnode_modules\[4mjsdom[24m\lib\jsdom\living\events\EventTarge
+t-impl.js:350:25[90m)[39m
+    at invokeEventListeners [90m(C:\Users\Samson Adeyomoye\Documents\mine-watch
+er-main\[39mnode_modules\[4mjsdom[24m\lib\jsdom\living\events\EventTarget-imp
+l.js:286:3[90m)[39m
+    at HTMLUnknownElementImpl._dispatch [90m(C:\Users\Samson Adeyomoye\Document
+s\mine-watcher-main\[39mnode_modules\[4mjsdom[24m\lib\jsdom\living\events\Eve
+ntTarget-impl.js:233:9[90m)[39m
+    at HTMLUnknownElementImpl.dispatchEvent [90m(C:\Users\Samson Adeyomoye\Docu
+ments\mine-watcher-main\[39mnode_modules\[4mjsdom[24m\lib\jsdom\living\events
+\EventTarget-impl.js:104:17[90m)[39m
+Error: Uncaught [TypeError: Cannot read properties of undefined (reading 'bg')]
+    at reportException (C:\Users\Samson Adeyomoye\Documents\mine-watcher-main\no
+de_modules\jsdom\lib\jsdom\living\helpers\runtime-script-errors.js:66:24)
+    at innerInvokeEventListeners (C:\Users\Samson Adeyomoye\Documents\mine-watch
+er-main\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js:353:9)
+    at invokeEventListeners (C:\Users\Samson Adeyomoye\Documents\mine-watcher-ma
+in\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js:286:3)
+    at HTMLUnknownElementImpl._dispatch (C:\Users\Samson Adeyomoye\Documents\min
+e-watcher-main\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js:23
+3:9)
+    at HTMLUnknownElementImpl.dispatchEvent (C:\Users\Samson Adeyomoye\Documents
+\mine-watcher-main\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.j
+s:104:17)
+    at HTMLUnknownElement.dispatchEvent (C:\Users\Samson Adeyomoye\Documents\min
+e-watcher-main\node_modules\jsdom\lib\jsdom\living\generated\EventTarget.js:241:
+34)
+    at Object.invokeGuardedCallbackDev (C:\Users\Samson Adeyomoye\Documents\mine
+-watcher-main\node_modules\react-dom\cjs\react-dom.development.js:4213:16)
+    at invokeGuardedCallback (C:\Users\Samson Adeyomoye\Documents\mine-watcher-m
+ain\node_modules\react-dom\cjs\react-dom.development.js:4277:31)
+    at beginWork$1 (C:\Users\Samson Adeyomoye\Documents\mine-watcher-main\node_m
+odules\react-dom\cjs\react-dom.development.js:27490:7)
+    at performUnitOfWork (C:\Users\Samson Adeyomoye\Documents\mine-watcher-main\
+node_modules\react-dom\cjs\react-dom.development.js:26599:12) TypeError: Cannot 
+read properties of undefined (reading 'bg')
+    at AlertItem [90m(C:\Users\Samson Adeyomoye\Documents\mine-watcher-main\[3
+9msrc\components\dashboard\AlertItem.tsx:68:16[90m)[39m
+    at renderWithHooks [90m(C:\Users\Samson Adeyomoye\Documents\mine-watcher-ma
+in\[39mnode_modules\[4mreact-dom[24m\cjs\react-dom.development.js:15486:18[9
+0m)[39m
+    at mountIndeterminateComponent [90m(C:\Users\Samson Adeyomoye\Documents\min
+e-watcher-main\[39mnode_modules\[4mreact-dom[24m\cjs\react-dom.development.js
+:20103:13[90m)[39m
+    at beginWork [90m(C:\Users\Samson Adeyomoye\Documents\mine-watcher-main\[3
+9mnode_modules\[4mreact-dom[24m\cjs\react-dom.development.js:21626:16[90m)[3
+9m
+    at HTMLUnknownElement.callCallback [90m(C:\Users\Samson Adeyomoye\Documents
+\mine-watcher-main\[39mnode_modules\[4mreact-dom[24m\cjs\react-dom.developmen
+t.js:4164:14[90m)[39m
+    at HTMLUnknownElement.callTheUserObjectsOperation [90m(C:\Users\Samson Adey
+omoye\Documents\mine-watcher-main\[39mnode_modules\[4mjsdom[24m\lib\jsdom\liv
+ing\generated\EventListener.js:26:30[90m)[39m
+    at innerInvokeEventListeners [90m(C:\Users\Samson Adeyomoye\Documents\mine-
+watcher-main\[39mnode_modules\[4mjsdom[24m\lib\jsdom\living\events\EventTarge
+t-impl.js:350:25[90m)[39m
+    at invokeEventListeners [90m(C:\Users\Samson Adeyomoye\Documents\mine-watch
+er-main\[39mnode_modules\[4mjsdom[24m\lib\jsdom\living\events\EventTarget-imp
+l.js:286:3[90m)[39m
+    at HTMLUnknownElementImpl._dispatch [90m(C:\Users\Samson Adeyomoye\Document
+s\mine-watcher-main\[39mnode_modules\[4mjsdom[24m\lib\jsdom\living\events\Eve
+ntTarget-impl.js:233:9[90m)[39m
+    at HTMLUnknownElementImpl.dispatchEvent [90m(C:\Users\Samson Adeyomoye\Docu
+ments\mine-watcher-main\[39mnode_modules\[4mjsdom[24m\lib\jsdom\living\events
+\EventTarget-impl.js:104:17[90m)[39m
+The above error occurred in the <AlertItem> component:
+
+    at AlertItem (C:\Users\Samson Adeyomoye\Documents\mine-watcher-main\src\comp
+onents\dashboard\AlertItem.tsx:36:22)
+    at div
+    at div
+    at C:\Users\Samson 
+Adeyomoye\Documents\mine-watcher-main\src\test\setup.ts:3:30
+    at div
+    at div
+    at main
+    at div
+    at Dashboard (C:\Users\Samson Adeyomoye\Documents\mine-watcher-main\src\comp
+onents\dashboard\Dashboard.tsx:88:61)
+    at QueryClientProvider (file:///C:/Users/Samson%20Adeyomoye/Documents/mine-w
+atcher-main/node_modules/@tanstack/react-query/build/modern/QueryClientProvider.
+js:20:3)
+    at AllTheProviders (C:\Users\Samson 
+Adeyomoye\Documents\mine-watcher-main\src\test\utils.tsx:14:28)
+
+Consider adding an error boundary to your tree to customize error handling 
+behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error 
+boundaries.
+
+[90mstderr[2m | src/components/dashboard/Dashboard.test.tsx[2m > 
+[22m[2mDashboard Component[2m > [22m[2mrenders navigation items in the 
+sidebar
+[22m[39mError: Uncaught [TypeError: Cannot read properties of undefined 
+(reading 'bg')]
+    at reportException (C:\Users\Samson Adeyomoye\Documents\mine-watcher-main\no
+de_modules\jsdom\lib\jsdom\living\helpers\runtime-script-errors.js:66:24)
+    at innerInvokeEventListeners (C:\Users\Samson Adeyomoye\Documents\mine-watch
+er-main\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js:353:9)
+    at invokeEventListeners (C:\Users\Samson Adeyomoye\Documents\mine-watcher-ma
+in\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js:286:3)
+    at HTMLUnknownElementImpl._dispatch (C:\Users\Samson Adeyomoye\Documents\min
+e-watcher-main\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js:23
+3:9)
+    at HTMLUnknownElementImpl.dispatchEvent (C:\Users\Samson Adeyomoye\Documents
+\mine-watcher-main\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.j
+s:104:17)
+    at HTMLUnknownElement.dispatchEvent (C:\Users\Samson Adeyomoye\Documents\min
+e-watcher-main\node_modules\jsdom\lib\jsdom\living\generated\EventTarget.js:241:
+34)
+    at Object.invokeGuardedCallbackDev (C:\Users\Samson Adeyomoye\Documents\mine
+-watcher-main\node_modules\react-dom\cjs\react-dom.development.js:4213:16)
+    at invokeGuardedCallback (C:\Users\Samson Adeyomoye\Documents\mine-watcher-m
+ain\node_modules\react-dom\cjs\react-dom.development.js:4277:31)
+    at beginWork$1 (C:\Users\Samson Adeyomoye\Documents\mine-watcher-main\node_m
+odules\react-dom\cjs\react-dom.development.js:27490:7)
+    at performUnitOfWork (C:\Users\Samson Adeyomoye\Documents\mine-watcher-main\
+node_modules\react-dom\cjs\react-dom.development.js:26599:12) TypeError: Cannot 
+read properties of undefined (reading 'bg')
+    at AlertItem [90m(C:\Users\Samson Adeyomoye\Documents\mine-watcher-main\[3
+9msrc\components\dashboard\AlertItem.tsx:68:16[90m)[39m
+    at renderWithHooks [90m(C:\Users\Samson Adeyomoye\Documents\mine-watcher-ma
+in\[39mnode_modules\[4mreact-dom[24m\cjs\react-dom.development.js:15486:18[9
+0m)[39m
+    at mountIndeterminateComponent [90m(C:\Users\Samson Adeyomoye\Documents\min
+e-watcher-main\[39mnode_modules\[4mreact-dom[24m\cjs\react-dom.development.js
+:20103:13[90m)[39m
+    at beginWork [90m(C:\Users\Samson Adeyomoye\Documents\mine-watcher-main\[3
+9mnode_modules\[4mreact-dom[24m\cjs\react-dom.development.js:21626:16[90m)[3
+9m
+    at HTMLUnknownElement.callCallback [90m(C:\Users\Samson Adeyomoye\Documents
+\mine-watcher-main\[39mnode_modules\[4mreact-dom[24m\cjs\react-dom.developmen
+t.js:4164:14[90m)[39m
+    at HTMLUnknownElement.callTheUserObjectsOperation [90m(C:\Users\Samson Adey
+omoye\Documents\mine-watcher-main\[39mnode_modules\[4mjsdom[24m\lib\jsdom\liv
+ing\generated\EventListener.js:26:30[90m)[39m
+    at innerInvokeEventListeners [90m(C:\Users\Samson Adeyomoye\Documents\mine-
+watcher-main\[39mnode_modules\[4mjsdom[24m\lib\jsdom\living\events\EventTarge
+t-impl.js:350:25[90m)[39m
+    at invokeEventListeners [90m(C:\Users\Samson Adeyomoye\Documents\mine-watch
+er-main\[39mnode_modules\[4mjsdom[24m\lib\jsdom\living\events\EventTarget-imp
+l.js:286:3[90m)[39m
+    at HTMLUnknownElementImpl._dispatch [90m(C:\Users\Samson Adeyomoye\Document
+s\mine-watcher-main\[39mnode_modules\[4mjsdom[24m\lib\jsdom\living\events\Eve
+ntTarget-impl.js:233:9[90m)[39m
+    at HTMLUnknownElementImpl.dispatchEvent [90m(C:\Users\Samson Adeyomoye\Docu
+ments\mine-watcher-main\[39mnode_modules\[4mjsdom[24m\lib\jsdom\living\events
+\EventTarget-impl.js:104:17[90m)[39m
+Error: Uncaught [TypeError: Cannot read properties of undefined (reading 'bg')]
+    at reportException (C:\Users\Samson Adeyomoye\Documents\mine-watcher-main\no
+de_modules\jsdom\lib\jsdom\living\helpers\runtime-script-errors.js:66:24)
+    at innerInvokeEventListeners (C:\Users\Samson Adeyomoye\Documents\mine-watch
+er-main\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js:353:9)
+    at invokeEventListeners (C:\Users\Samson Adeyomoye\Documents\mine-watcher-ma
+in\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js:286:3)
+    at HTMLUnknownElementImpl._dispatch (C:\Users\Samson Adeyomoye\Documents\min
+e-watcher-main\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js:23
+3:9)
+    at HTMLUnknownElementImpl.dispatchEvent (C:\Users\Samson Adeyomoye\Documents
+\mine-watcher-main\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.j
+s:104:17)
+    at HTMLUnknownElement.dispatchEvent (C:\Users\Samson Adeyomoye\Documents\min
+e-watcher-main\node_modules\jsdom\lib\jsdom\living\generated\EventTarget.js:241:
+34)
+    at Object.invokeGuardedCallbackDev (C:\Users\Samson Adeyomoye\Documents\mine
+-watcher-main\node_modules\react-dom\cjs\react-dom.development.js:4213:16)
+    at invokeGuardedCallback (C:\Users\Samson Adeyomoye\Documents\mine-watcher-m
+ain\node_modules\react-dom\cjs\react-dom.development.js:4277:31)
+    at beginWork$1 (C:\Users\Samson Adeyomoye\Documents\mine-watcher-main\node_m
+odules\react-dom\cjs\react-dom.development.js:27490:7)
+    at performUnitOfWork (C:\Users\Samson Adeyomoye\Documents\mine-watcher-main\
+node_modules\react-dom\cjs\react-dom.development.js:26599:12) TypeError: Cannot 
+read properties of undefined (reading 'bg')
+    at AlertItem [90m(C:\Users\Samson Adeyomoye\Documents\mine-watcher-main\[3
+9msrc\components\dashboard\AlertItem.tsx:68:16[90m)[39m
+    at renderWithHooks [90m(C:\Users\Samson Adeyomoye\Documents\mine-watcher-ma
+in\[39mnode_modules\[4mreact-dom[24m\cjs\react-dom.development.js:15486:18[9
+0m)[39m
+    at mountIndeterminateComponent [90m(C:\Users\Samson Adeyomoye\Documents\min
+e-watcher-main\[39mnode_modules\[4mreact-dom[24m\cjs\react-dom.development.js
+:20103:13[90m)[39m
+    at beginWork [90m(C:\Users\Samson Adeyomoye\Documents\mine-watcher-main\[3
+9mnode_modules\[4mreact-dom[24m\cjs\react-dom.development.js:21626:16[90m)[3
+9m
+    at HTMLUnknownElement.callCallback [90m(C:\Users\Samson Adeyomoye\Documents
+\mine-watcher-main\[39mnode_modules\[4mreact-dom[24m\cjs\react-dom.developmen
+t.js:4164:14[90m)[39m
+    at HTMLUnknownElement.callTheUserObjectsOperation [90m(C:\Users\Samson Adey
+omoye\Documents\mine-watcher-main\[39mnode_modules\[4mjsdom[24m\lib\jsdom\liv
+ing\generated\EventListener.js:26:30[90m)[39m
+    at innerInvokeEventListeners [90m(C:\Users\Samson Adeyomoye\Documents\mine-
+watcher-main\[39mnode_modules\[4mjsdom[24m\lib\jsdom\living\events\EventTarge
+t-impl.js:350:25[90m)[39m
+    at invokeEventListeners [90m(C:\Users\Samson Adeyomoye\Documents\mine-watch
+er-main\[39mnode_modules\[4mjsdom[24m\lib\jsdom\living\events\EventTarget-imp
+l.js:286:3[90m)[39m
+    at HTMLUnknownElementImpl._dispatch [90m(C:\Users\Samson Adeyomoye\Document
+s\mine-watcher-main\[39mnode_modules\[4mjsdom[24m\lib\jsdom\living\events\Eve
+ntTarget-impl.js:233:9[90m)[39m
+    at HTMLUnknownElementImpl.dispatchEvent [90m(C:\Users\Samson Adeyomoye\Docu
+ments\mine-watcher-main\[39mnode_modules\[4mjsdom[24m\lib\jsdom\living\events
+\EventTarget-impl.js:104:17[90m)[39m
+The above error occurred in the <AlertItem> component:
+
+    at AlertItem (C:\Users\Samson Adeyomoye\Documents\mine-watcher-main\src\comp
+onents\dashboard\AlertItem.tsx:36:22)
+    at div
+    at div
+    at C:\Users\Samson 
+Adeyomoye\Documents\mine-watcher-main\src\test\setup.ts:3:30
+    at div
+    at div
+    at main
+    at div
+    at Dashboard (C:\Users\Samson Adeyomoye\Documents\mine-watcher-main\src\comp
+onents\dashboard\Dashboard.tsx:88:61)
+    at QueryClientProvider (file:///C:/Users/Samson%20Adeyomoye/Documents/mine-w
+atcher-main/node_modules/@tanstack/react-query/build/modern/QueryClientProvider.
+js:20:3)
+    at AllTheProviders (C:\Users\Samson 
+Adeyomoye\Documents\mine-watcher-main\src\test\utils.tsx:14:28)
+
+Consider adding an error boundary to your tree to customize error handling 
+behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error 
+boundaries.
+
+ [31m├ù[39m src/components/dashboard/Dashboard.test.tsx[2m > [22mDashboard Component[2m > [22mdisplays the stats cards with mock data[33m 5013[2mms[22m[39m
+[31m   ΓåÆ Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".[39m
+ [32mΓ£ô[39m src/components/dashboard/Dashboard.test.tsx[2m > [22mDashboard Component[2m > [22mrenders the map view container[32m 52[2mms[22m[39m
+ [32mΓ£ô[39m src/components/dashboard/Dashboard.test.tsx[2m > [22mDashboard Component[2m > [22mrenders navigation items in the sidebar[32m 45[2mms[22m[39m
+
+[31mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»[39m[1m[41m Failed Tests 2 
+[49m[22m[31mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»[39m
+
+[41m[1m FAIL [22m[49m src/components/dashboard/Dashboard.test.tsx[2m > 
+[22mDashboard Component[2m > [22mrenders the dashboard with site name
+[31m[1mError[22m: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or 
+configure it globally with "testTimeout".[39m
+[36m [2mΓ¥»[22m src/components/dashboard/Dashboard.test.tsx:[2m6:5[22m[39m
+    [90m  4| [39m
+    [90m  5| [39m[34mdescribe[39m([32m'Dashboard 
+Component'[39m[33m,[39m () [33m=>[39m {
+    [90m  6| [39m    [34mit[39m([32m'renders the dashboard with site 
+name'[39m[33m,[39m [35masync[39m () [33m=>[39m {
+    [90m   | [39m    [31m^[39m
+    [90m  7| [39m        [35mconst[39m { container } [33m=[39m 
+[34mrender[39m([33m<[39m[33mDashboard[39m 
+[33m/[39m[33m>[39m)[33m;[39m
+    [90m  8| [39m
+
+[31m[2mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ
+»[1/2]ΓÄ»[22m[39m
+
+[41m[1m FAIL [22m[49m src/components/dashboard/Dashboard.test.tsx[2m > 
+[22mDashboard Component[2m > [22mdisplays the stats cards with mock data
+[31m[1mError[22m: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or 
+configure it globally with "testTimeout".[39m
+[36m [2mΓ¥»[22m 
+src/components/dashboard/Dashboard.test.tsx:[2m21:5[22m[39m
+    [90m 19| [39m    })[33m;[39m
+    [90m 20| [39m
+    [90m 21| [39m    [34mit[39m([32m'displays the stats cards with mock 
+data'[39m[33m,[39m [35masync[39m () [33m=>[39m {
+    [90m   | [39m    [31m^[39m
+    [90m 22| [39m        [34mrender[39m([33m<[39m[33mDashboard[39m 
+[33m/[39m[33m>[39m)[33m;[39m
+    [90m 23| [39m
+
+[31m[2mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ
+»[2/2]ΓÄ»[22m[39m
+
+[31mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»[39m[1m[41m Unhandled Errors 
+[49m[22m[31mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»[39m
+[31m[1m
+Vitest caught 4 unhandled errors during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure 
+your tests are not affected.[22m[39m
+
+[31mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»[39m[1m[41m Uncaught Exception 
+[49m[22m[31mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»[39m
+[31m[1mTypeError[22m: Cannot read properties of undefined (reading 'bg')[39m
+[36m [2mΓ¥»[22m AlertItem 
+src/components/dashboard/AlertItem.tsx:[2m68:16[22m[39m
+    [90m 66| [39m      [33mclassName[39m[33m=[39m[33m{[39m[34mcn[39m(
+    [90m 67| [39m        [32m"p-4 rounded-lg border"[39m[33m,[39m
+    [90m 68| [39m        styles[33m.[39mbg[33m,[39m
+    [90m   | [39m               [31m^[39m
+    [90m 69| [39m        styles[33m.[39mborder
+    [90m 70| [39m      )[33m}[39m
+[90m [2mΓ¥»[22m renderWithHooks 
+node_modules/react-dom/cjs/react-dom.development.js:[2m15486:18[22m[39m
+[90m [2mΓ¥»[22m mountIndeterminateComponent 
+node_modules/react-dom/cjs/react-dom.development.js:[2m20103:13[22m[39m
+[90m [2mΓ¥»[22m beginWork 
+node_modules/react-dom/cjs/react-dom.development.js:[2m21626:16[22m[39m
+[90m [2mΓ¥»[22m beginWork$1 
+node_modules/react-dom/cjs/react-dom.development.js:[2m27465:14[22m[39m
+[90m [2mΓ¥»[22m performUnitOfWork 
+node_modules/react-dom/cjs/react-dom.development.js:[2m26599:12[22m[39m
+[90m [2mΓ¥»[22m workLoopSync 
+node_modules/react-dom/cjs/react-dom.development.js:[2m26505:5[22m[39m
+[90m [2mΓ¥»[22m renderRootSync 
+node_modules/react-dom/cjs/react-dom.development.js:[2m26473:7[22m[39m
+[90m [2mΓ¥»[22m recoverFromConcurrentError 
+node_modules/react-dom/cjs/react-dom.development.js:[2m25889:20[22m[39m
+[90m [2mΓ¥»[22m performConcurrentWorkOnRoot 
+node_modules/react-dom/cjs/react-dom.development.js:[2m25789:22[22m[39m
+
+[31mThis error originated in 
+"[1msrc/components/dashboard/Dashboard.test.tsx[22m" test file. It doesn't 
+mean the error was thrown inside the file itself, but while it was running.[39m
+[31mThe latest test that might've caused the error is "[1mrenders the 
+dashboard with site name[22m". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last 
+documented test before it was thrown.[39m
+
+[31mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»[39m[1m[41m Uncaught Exception 
+[49m[22m[31mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»[39m
+[31m[1mTypeError[22m: Cannot read properties of undefined (reading 'bg')[39m
+[36m [2mΓ¥»[22m AlertItem 
+src/components/dashboard/AlertItem.tsx:[2m68:16[22m[39m
+    [90m 66| [39m      [33mclassName[39m[33m=[39m[33m{[39m[34mcn[39m(
+    [90m 67| [39m        [32m"p-4 rounded-lg border"[39m[33m,[39m
+    [90m 68| [39m        styles[33m.[39mbg[33m,[39m
+    [90m   | [39m               [31m^[39m
+    [90m 69| [39m        styles[33m.[39mborder
+    [90m 70| [39m      )[33m}[39m
+[90m [2mΓ¥»[22m renderWithHooks 
+node_modules/react-dom/cjs/react-dom.development.js:[2m15486:18[22m[39m
+[90m [2mΓ¥»[22m mountIndeterminateComponent 
+node_modules/react-dom/cjs/react-dom.development.js:[2m20103:13[22m[39m
+[90m [2mΓ¥»[22m beginWork 
+node_modules/react-dom/cjs/react-dom.development.js:[2m21626:16[22m[39m
+[90m [2mΓ¥»[22m beginWork$1 
+node_modules/react-dom/cjs/react-dom.development.js:[2m27465:14[22m[39m
+[90m [2mΓ¥»[22m performUnitOfWork 
+node_modules/react-dom/cjs/react-dom.development.js:[2m26599:12[22m[39m
+[90m [2mΓ¥»[22m workLoopSync 
+node_modules/react-dom/cjs/react-dom.development.js:[2m26505:5[22m[39m
+[90m [2mΓ¥»[22m renderRootSync 
+node_modules/react-dom/cjs/react-dom.development.js:[2m26473:7[22m[39m
+[90m [2mΓ¥»[22m recoverFromConcurrentError 
+node_modules/react-dom/cjs/react-dom.development.js:[2m25889:20[22m[39m
+[90m [2mΓ¥»[22m performConcurrentWorkOnRoot 
+node_modules/react-dom/cjs/react-dom.development.js:[2m25789:22[22m[39m
+
+[31mThis error originated in 
+"[1msrc/components/dashboard/Dashboard.test.tsx[22m" test file. It doesn't 
+mean the error was thrown inside the file itself, but while it was running.[39m
+[31mThe latest test that might've caused the error is "[1mdisplays the stats 
+cards with mock data[22m". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last 
+documented test before it was thrown.[39m
+
+[31mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»[39m[1m[41m Uncaught Exception 
+[49m[22m[31mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»[39m
+[31m[1mTypeError[22m: Cannot read properties of undefined (reading 'bg')[39m
+[36m [2mΓ¥»[22m AlertItem 
+src/components/dashboard/AlertItem.tsx:[2m68:16[22m[39m
+    [90m 66| [39m      [33mclassName[39m[33m=[39m[33m{[39m[34mcn[39m(
+    [90m 67| [39m        [32m"p-4 rounded-lg border"[39m[33m,[39m
+    [90m 68| [39m        styles[33m.[39mbg[33m,[39m
+    [90m   | [39m               [31m^[39m
+    [90m 69| [39m        styles[33m.[39mborder
+    [90m 70| [39m      )[33m}[39m
+[90m [2mΓ¥»[22m renderWithHooks 
+node_modules/react-dom/cjs/react-dom.development.js:[2m15486:18[22m[39m
+[90m [2mΓ¥»[22m mountIndeterminateComponent 
+node_modules/react-dom/cjs/react-dom.development.js:[2m20103:13[22m[39m
+[90m [2mΓ¥»[22m beginWork 
+node_modules/react-dom/cjs/react-dom.development.js:[2m21626:16[22m[39m
+[90m [2mΓ¥»[22m beginWork$1 
+node_modules/react-dom/cjs/react-dom.development.js:[2m27465:14[22m[39m
+[90m [2mΓ¥»[22m performUnitOfWork 
+node_modules/react-dom/cjs/react-dom.development.js:[2m26599:12[22m[39m
+[90m [2mΓ¥»[22m workLoopSync 
+node_modules/react-dom/cjs/react-dom.development.js:[2m26505:5[22m[39m
+[90m [2mΓ¥»[22m renderRootSync 
+node_modules/react-dom/cjs/react-dom.development.js:[2m26473:7[22m[39m
+[90m [2mΓ¥»[22m recoverFromConcurrentError 
+node_modules/react-dom/cjs/react-dom.development.js:[2m25889:20[22m[39m
+[90m [2mΓ¥»[22m performConcurrentWorkOnRoot 
+node_modules/react-dom/cjs/react-dom.development.js:[2m25789:22[22m[39m
+
+[31mThis error originated in 
+"[1msrc/components/dashboard/Dashboard.test.tsx[22m" test file. It doesn't 
+mean the error was thrown inside the file itself, but while it was running.[39m
+[31mThe latest test that might've caused the error is "[1mrenders the map 
+view container[22m". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last 
+documented test before it was thrown.[39m
+
+[31mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»[39m[1m[41m Uncaught Exception 
+[49m[22m[31mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»[39m
+[31m[1mTypeError[22m: Cannot read properties of undefined (reading 'bg')[39m
+[36m [2mΓ¥»[22m AlertItem 
+src/components/dashboard/AlertItem.tsx:[2m68:16[22m[39m
+    [90m 66| [39m      [33mclassName[39m[33m=[39m[33m{[39m[34mcn[39m(
+    [90m 67| [39m        [32m"p-4 rounded-lg border"[39m[33m,[39m
+    [90m 68| [39m        styles[33m.[39mbg[33m,[39m
+    [90m   | [39m               [31m^[39m
+    [90m 69| [39m        styles[33m.[39mborder
+    [90m 70| [39m      )[33m}[39m
+[90m [2mΓ¥»[22m renderWithHooks 
+node_modules/react-dom/cjs/react-dom.development.js:[2m15486:18[22m[39m
+[90m [2mΓ¥»[22m mountIndeterminateComponent 
+node_modules/react-dom/cjs/react-dom.development.js:[2m20103:13[22m[39m
+[90m [2mΓ¥»[22m beginWork 
+node_modules/react-dom/cjs/react-dom.development.js:[2m21626:16[22m[39m
+[90m [2mΓ¥»[22m beginWork$1 
+node_modules/react-dom/cjs/react-dom.development.js:[2m27465:14[22m[39m
+[90m [2mΓ¥»[22m performUnitOfWork 
+node_modules/react-dom/cjs/react-dom.development.js:[2m26599:12[22m[39m
+[90m [2mΓ¥»[22m workLoopSync 
+node_modules/react-dom/cjs/react-dom.development.js:[2m26505:5[22m[39m
+[90m [2mΓ¥»[22m renderRootSync 
+node_modules/react-dom/cjs/react-dom.development.js:[2m26473:7[22m[39m
+[90m [2mΓ¥»[22m recoverFromConcurrentError 
+node_modules/react-dom/cjs/react-dom.development.js:[2m25889:20[22m[39m
+[90m [2mΓ¥»[22m performConcurrentWorkOnRoot 
+node_modules/react-dom/cjs/react-dom.development.js:[2m25789:22[22m[39m
+
+[31mThis error originated in 
+"[1msrc/components/dashboard/Dashboard.test.tsx[22m" test file. It doesn't 
+mean the error was thrown inside the file itself, but while it was running.[39m
+[31mThe latest test that might've caused the error is "[1mrenders navigation 
+items in the sidebar[22m". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last 
+documented test before it was thrown.[39m
+[31mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m1 passed[39m[22m[90m (2)[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m3 passed[39m[22m[90m (5)[39m
+[2m     Errors [22m [1m[31m4 errors[39m[22m
+[2m   Start at [22m 15:45:36
+[2m   Duration [22m 12.08s[2m (transform 320ms, setup 457ms, collect 898ms, tests 10.13s, environment 663ms, prepare 264ms)[22m
+
