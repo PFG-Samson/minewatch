@@ -9,6 +9,7 @@ const DEFAULT_ZOOM = 2;
 
 interface MapViewProps {
   showImagery?: boolean;
+  showLabels?: boolean;
   showVegetationLoss?: boolean;
   showMiningExpansion?: boolean;
   showWaterAccumulation?: boolean;
@@ -23,6 +24,7 @@ interface MapViewProps {
 
 export function MapView({
   showImagery = true,
+  showLabels = false,
   showVegetationLoss = true,
   showMiningExpansion = true,
   showWaterAccumulation = true,
@@ -49,6 +51,7 @@ export function MapView({
     baselineImagery?: L.ImageOverlay;
     latestImagery?: L.ImageOverlay;
     latestPreviewImagery?: L.ImageOverlay;
+    labels?: L.TileLayer;
     highlighted?: L.GeoJSON;
   }>({});
 
@@ -166,6 +169,12 @@ export function MapView({
       attributionControl: true,
     });
 
+    map.createPane('labels');
+    const labelsPane = map.getPane('labels');
+    if (labelsPane) {
+      labelsPane.style.zIndex = '650';
+    }
+
     // Add satellite tile layer
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
       attribution: 'Tiles &copy; Esri',
@@ -182,6 +191,22 @@ export function MapView({
       mapInstanceRef.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+    if (layersRef.current.labels) {
+      map.removeLayer(layersRef.current.labels);
+      layersRef.current.labels = undefined;
+    }
+    if (showLabels) {
+      layersRef.current.labels = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Labels &copy; Esri',
+        maxZoom: 18,
+        pane: 'labels',
+      }).addTo(map);
+    }
+  }, [showLabels]);
 
   useEffect(() => {
     const map = mapInstanceRef.current;
@@ -257,31 +282,7 @@ export function MapView({
       }
     }
 
-    // 4. Render Buffer
-    const km = typeof bufferKm === 'number' && Number.isFinite(bufferKm) ? bufferKm : 2;
-    // Use preview bounds if available, else saved bounds
-    const activeLayer = layersRef.current.preview || layersRef.current.boundary;
-
-    // Only render buffer if we have an active layer (user defined area)
-    if (activeLayer) {
-      try {
-        const bounds = (activeLayer as any).getBounds?.();
-        if (bounds && bounds.isValid()) {
-          const center = bounds.getCenter();
-          const bufferLayer = L.circle(center, {
-            radius: km * 1000,
-            color: '#64748b',
-            weight: 2,
-            fillColor: '#64748b',
-            fillOpacity: 0.05,
-            dashArray: '5, 10',
-          }).addTo(map);
-          layersRef.current.buffer = bufferLayer;
-        }
-      } catch (e) {
-        console.error("Failed to render buffer", e);
-      }
-    }
+    // Buffer rendering removed
   }, [mineAreaBoundary, previewBoundary, bufferKm, showBoundary]);
 
   // Handle layer visibility

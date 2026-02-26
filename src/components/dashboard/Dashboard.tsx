@@ -6,7 +6,9 @@ import {
   AlertTriangle,
   CalendarDays,
   RefreshCw,
-  ChevronDown
+  ChevronDown,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { DashboardSidebar } from './DashboardSidebar';
@@ -28,6 +30,7 @@ import { ReportsView } from './ReportsView';
 
 const initialLayers = [
   { id: 'imagery', name: 'Satellite Imagery', description: 'RGB satellite overlays', color: '#3b82f6', enabled: true },
+  { id: 'labels', name: 'Basemap Labels', description: 'Place names overlay', color: '#111827', enabled: true },
   { id: 'vegetation_loss', name: 'Vegetation Loss', description: 'NDVI-based decline zones', color: '#c2410c', enabled: true },
   { id: 'mining_expansion', name: 'Bare Soil Expansion', description: 'BSI-based mining zones', color: '#f97316', enabled: true },
   { id: 'water_accumulation', name: 'Water Accumulation', description: 'NDWI-based water zones', color: '#2563eb', enabled: true },
@@ -46,6 +49,7 @@ export function Dashboard() {
   const [siteDescription, setSiteDescription] = useState<string>('');
   const [previewBoundary, setPreviewBoundary] = useState<Record<string, unknown> | null>(null);
   const [selectedAlertGeometry, setSelectedAlertGeometry] = useState<Record<string, unknown> | null>(null);
+  const [showLayerPanel, setShowLayerPanel] = useState(true);
 
   const alertsQuery = useQuery({
     queryKey: ['alerts'],
@@ -157,6 +161,7 @@ export function Dashboard() {
   };
 
   const showImagery = layers.find(l => l.id === 'imagery')?.enabled ?? true;
+  const showLabels = layers.find(l => l.id === 'labels')?.enabled ?? true;
   const showVegetationLoss = layers.find(l => l.id === 'vegetation_loss')?.enabled ?? true;
   const showMiningExpansion = layers.find(l => l.id === 'mining_expansion')?.enabled ?? true;
   const showWaterAccumulation = layers.find(l => l.id === 'water_accumulation')?.enabled ?? true;
@@ -318,6 +323,7 @@ export function Dashboard() {
                 <div className="flex-1 rounded-xl overflow-hidden border border-border shadow-inner relative">
                   <MapView
                     showImagery={showImagery}
+                    showLabels={showLabels}
                     showVegetationLoss={showVegetationLoss}
                     showMiningExpansion={showMiningExpansion}
                     showWaterAccumulation={showWaterAccumulation}
@@ -329,9 +335,19 @@ export function Dashboard() {
                     bufferKm={Number(bufferKm) || null}
                     highlightedGeometry={selectedAlertGeometry}
                   />
-                  <div className="absolute top-4 right-4 bg-background/80 backdrop-blur-sm p-3 rounded-lg border border-border z-[1000] w-64 shadow-lg">
-                    <LayerControl layers={layers} onToggle={handleLayerToggle} />
-                  </div>
+                  <button
+                    type="button"
+                    aria-label={showLayerPanel ? 'Hide layers panel' : 'Show layers panel'}
+                    className="absolute top-3 right-3 z-[1001] h-8 w-8 rounded-full bg-background/80 border border-border shadow-sm flex items-center justify-center"
+                    onClick={() => setShowLayerPanel(v => !v)}
+                  >
+                    {showLayerPanel ? <EyeOff className="w-4 h-4 text-foreground" /> : <Eye className="w-4 h-4 text-foreground" />}
+                  </button>
+                  {showLayerPanel && (
+                    <div className="absolute top-14 right-3 bg-background/80 backdrop-blur-sm p-2 rounded-lg border border-border z-[1000] w-48 shadow-lg">
+                      <LayerControl layers={layers} onToggle={handleLayerToggle} compact />
+                    </div>
+                  )}
                 </div>
               </div>
             )}
