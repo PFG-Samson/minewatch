@@ -33,12 +33,17 @@ def generate_rgb_png(
         with rasterio.open(blue_path) as b_src:
             b = b_src.read(1)
 
-        def normalize(band):
+        def normalize(band: np.ndarray) -> np.ndarray:
             band = band.astype(float)
-            # Sentinel-2 usually has valid reflectance up to 10000.
-            # 3000 is a common 'bright' limit for visual contrast.
-            band = (band / 3000.0) * 255.0 * brightness
-            return np.clip(band, 0, 255).astype(np.uint8)
+            low = np.percentile(band, 2.0)
+            high = np.percentile(band, 98.0)
+            if high > low:
+                scaled = (band - low) / (high - low)
+            else:
+                scaled = band / 3000.0
+            b_eff = max(0.8, min(brightness, 1.5))
+            scaled = np.clip(scaled * 255.0 * b_eff, 0, 255)
+            return scaled.astype(np.uint8)
 
         rgb = np.stack([normalize(r), normalize(g), normalize(b)], axis=-1)
         img = Image.fromarray(rgb)

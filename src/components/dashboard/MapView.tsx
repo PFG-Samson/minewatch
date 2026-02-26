@@ -140,6 +140,12 @@ export function MapView({
         [bounds[0], bounds[1]],
         [bounds[2], bounds[3]]
       ], { opacity: 0.5 }).addTo(map);
+      const sw = L.latLng(bounds[0], bounds[1]);
+      const ne = L.latLng(bounds[2], bounds[3]);
+      const overlayBounds = L.latLngBounds(sw, ne);
+      if (overlayBounds.isValid()) {
+        map.fitBounds(overlayBounds.pad(0.1));
+      }
     }
 
     if (imagery?.latest && showImagery) {
@@ -148,6 +154,12 @@ export function MapView({
         [bounds[0], bounds[1]],
         [bounds[2], bounds[3]]
       ], { opacity: 1.0 }).addTo(map);
+      const sw = L.latLng(bounds[0], bounds[1]);
+      const ne = L.latLng(bounds[2], bounds[3]);
+      const overlayBounds = L.latLngBounds(sw, ne);
+      if (overlayBounds.isValid()) {
+        map.fitBounds(overlayBounds.pad(0.1));
+      }
     }
     if (!imagery?.latest && !imagery?.baseline && latestPreview?.preview && showImagery) {
       const { url, bounds } = latestPreview.preview;
@@ -155,6 +167,12 @@ export function MapView({
         [bounds[0], bounds[1]],
         [bounds[2], bounds[3]]
       ], { opacity: 1.0 }).addTo(map);
+      const sw = L.latLng(bounds[0], bounds[1]);
+      const ne = L.latLng(bounds[2], bounds[3]);
+      const overlayBounds = L.latLngBounds(sw, ne);
+      if (overlayBounds.isValid()) {
+        map.fitBounds(overlayBounds.pad(0.1));
+      }
     }
   }, [imagery, latestPreview, showImagery]);
 
