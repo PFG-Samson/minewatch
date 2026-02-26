@@ -542,6 +542,43 @@ def run_analysis_core(
         )
         baseline_paths = baseline_result.paths
         latest_paths = latest_result.paths
+        # Validate readability of downloaded bands; if corrupt, re-download that band
+        def _ensure_readable(path: str) -> bool:
+            try:
+                import rasterio
+                with rasterio.open(path) as src:
+                    src.read(1, window=((0, 1), (0, 1)))
+                return True
+            except Exception:
+                return False
+        from backend.utils.stac_downloader import download_sentinel2_bands
+        for band in required_bands:
+            bp = baseline_paths.get(band)
+            if bp and not _ensure_readable(bp):
+                try:
+                    print(f"  ⚠️ Baseline {band} unreadable; re-downloading...")
+                    import os
+                    try:
+                        os.remove(bp)
+                    except Exception:
+                        pass
+                    new_paths = download_sentinel2_bands(baseline_scene.uri, [band])
+                    baseline_paths[band] = new_paths[band]
+                except Exception as e:
+                    raise AnalysisError(f"Failed to recover baseline band {band}: {e}", stage="download", run_id=run_id)
+            lp = latest_paths.get(band)
+            if lp and not _ensure_readable(lp):
+                try:
+                    print(f"  ⚠️ Latest {band} unreadable; re-downloading...")
+                    import os
+                    try:
+                        os.remove(lp)
+                    except Exception:
+                        pass
+                    new_paths = download_sentinel2_bands(latest_scene.uri, [band])
+                    latest_paths[band] = new_paths[band]
+                except Exception as e:
+                    raise AnalysisError(f"Failed to recover latest band {band}: {e}", stage="download", run_id=run_id)
         print(f"  ✓ Baseline and latest bands downloaded")
         epoch_info = {
             "latest": {"epoch_time": latest_scene.acquired_at, "coverage_percent": latest_cov, "scene_uris": [latest_scene.uri]},

@@ -65,18 +65,37 @@ def download_sentinel2_bands(stac_item_id: str, bands: List[str]) -> Dict[str, s
                 
                 if not local_path.exists():
                     print(f"Downloading {band} for {stac_item_id}...")
-                    with requests.get(signed_url, stream=True, timeout=120) as r:
-                        r.raise_for_status()
-                        total_size = int(r.headers.get('content-length', 0))
-                        print(f"  Size: {total_size / (1024*1024):.1f} MB")
-                        with open(local_path, 'wb') as f:
-                            downloaded = 0
-                            for chunk in r.iter_content(chunk_size=8192):
-                                f.write(chunk)
-                                downloaded += len(chunk)
-                                if downloaded % (1024 * 1024) == 0:  # Log every MB
-                                    print(f"  Downloaded: {downloaded / (1024*1024):.1f} MB")
-                    print(f"  ✓ {band} download complete")
+                    retries = 3
+                    for attempt in range(1, retries + 1):
+                        tmp_path = DATA_DIR / f".tmp_{file_name}"
+                        try:
+                            with requests.get(signed_url, stream=True, timeout=180) as r:
+                                r.raise_for_status()
+                                total_size = int(r.headers.get('content-length', 0))
+                                print(f"  Size: {total_size / (1024*1024):.1f} MB")
+                                downloaded = 0
+                                with open(tmp_path, 'wb') as f:
+                                    for chunk in r.iter_content(chunk_size=1024 * 64):
+                                        if chunk:
+                                            f.write(chunk)
+                                            downloaded += len(chunk)
+                                            if downloaded % (1024 * 1024) == 0:
+                                                print(f"  Downloaded: {downloaded / (1024*1024):.1f} MB")
+                            # Verify size if header present
+                            if total_size > 0 and tmp_path.stat().st_size < total_size:
+                                raise IOError(f"Incomplete download ({tmp_path.stat().st_size}/{total_size} bytes)")
+                            tmp_path.replace(local_path)
+                            print(f"  ✓ {band} download complete")
+                            break
+                        except Exception as e:
+                            print(f"  ⚠️ Attempt {attempt} failed for {band}: {e}")
+                            try:
+                                if tmp_path.exists():
+                                    tmp_path.unlink()
+                            except Exception:
+                                pass
+                            if attempt == retries:
+                                raise
                 else:
                     print(f"  ✓ {band} already cached")
                 
